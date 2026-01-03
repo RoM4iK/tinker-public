@@ -1,0 +1,56 @@
+#!/bin/bash
+# Wrapper script to run agent-bridge inside tmux with status bar
+
+set -e
+
+AGENT_TYPE="${AGENT_TYPE:-worker}"
+STATUS_FILE="/tmp/agent-bridge-status-$AGENT_TYPE"
+
+# Check if we're already inside tmux
+if [ -n "$TMUX" ]; then
+    export STATUS_FILE
+    exec agent-bridge
+fi
+
+# Check if tmux is available
+if ! command -v tmux &> /dev/null; then
+    echo "❌ tmux not found. Running bridge directly..."
+    exec agent-bridge
+fi
+
+# Clean up status file on exit
+cleanup() { rm -f "$STATUS_FILE"; }
+trap cleanup EXIT
+
+echo "⟳ connecting" > "$STATUS_FILE"
+
+SESSION="agent"
+tmux kill-session -t "$SESSION" 2>/dev/null || true
+
+COLS=$(tput cols 2>/dev/null || echo 120)
+LINES=$(tput lines 2>/dev/null || echo 40)
+tmux new-session -d -s "$SESSION" -x "$COLS" -y "$LINES"
+
+# Configure status bar
+tmux set-option -t "$SESSION" status on
+tmux set-option -t "$SESSION" status-interval 1
+tmux set-option -t "$SESSION" status-style "bg=black,fg=white"
+tmux set-option -t "$SESSION" status-left "#[fg=cyan,bold]🤖 $AGENT_TYPE #[fg=cyan]│ "
+tmux set-option -t "$SESSION" status-right "#[fg=green]#(cat $STATUS_FILE 2>/dev/null || echo '❓') #[fg=cyan]│ #[fg=white]%H:%M:%S"
+tmux set-option -t "$SESSION" window-status-format ""
+tmux set-option -t "$SESSION" window-status-current-format ""
+tmux set-option -t "$SESSION" remain-on-exit off
+tmux set-option -t "$SESSION" mouse on
+
+# Run agent-bridge in tmux session
+tmux send-keys -t "$SESSION" "export STATUS_FILE='$STATUS_FILE' AGENT_TYPE='$AGENT_TYPE' && agent-bridge" C-m
+
+# Attach or wait
+if [ -t 0 ]; then
+    tmux attach-session -t "$SESSION"
+else
+    echo "📡 Running in background mode"
+    while tmux has-session -t "$SESSION" 2>/dev/null; do sleep 1; done
+fi
+
+cleanup

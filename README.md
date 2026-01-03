@@ -2,25 +2,39 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A distribution repository for the Tinker agent system - providing pre-built binaries, reusable skills, and installation scripts for easy onboarding.
+Pre-built binaries, reusable skills, and bootstrap scripts for the Tinker agent system.
 
-## Quick Start
+## Quick Start (New Project)
 
-Bootstrap a new repository with the Tinker agent system:
+Add Tinker agents to any repository with just 2 files:
 
 ```bash
-ruby -e "$(curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/main/scripts/install.rb)"
-```
+# Download the bootstrap files
+curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/main/run-tinker-agent.rb -o run-tinker-agent.rb
+curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/main/Dockerfile.tinker -o Dockerfile.tinker
+chmod +x run-tinker-agent.rb
 
-This will:
-- Download the `agent-bridge` binary for your platform
-- Install reusable skills (git-workflow, worker-workflow, etc.)
-- Create configuration files
-- Set up the directory structure
+# Run an agent
+./run-tinker-agent.rb worker
+```
 
 ## What's Included
 
-### 1. Agent Bridge Binary
+### Skills
+
+Reusable agent skills downloaded at container build time:
+- **git-workflow**: Branch management, commits, PRs, stacking
+- **worker-workflow**: Task execution, coordination, escalation
+- **researcher-workflow**: Codebase analysis, proposal generation
+- **review-workflow**: PR review, code quality checks
+- **memory**: Knowledge sharing across sessions
+- **memory-consolidation**: Background memory hygiene
+- **orchestrator-workflow**: Agent coordination and assignment
+- **ticket-management**: Creating and managing tickets
+- **proposal-execution**: Executing approved proposals
+- **retrospective**: Post-ticket learning documents
+
+### Agent Bridge
 
 Pre-built Go binaries for multiple platforms:
 - `linux-amd64` (default)
@@ -28,173 +42,60 @@ Pre-built Go binaries for multiple platforms:
 - `darwin-amd64` (macOS Intel)
 - `darwin-arm64` (macOS Apple Silicon)
 
-### 2. Skills
-
-Reusable agent skills that can be installed into any Tinker project:
-- **git-workflow**: Branch management, commits, PRs, stacking
-- **worker-workflow**: Task execution, coordination, escalation
-- **researcher-workflow**: Codebase analysis, proposal generation
-- **review-workflow**: PR review, code quality checks
-- **memory**: Knowledge sharing across sessions
-- **memory-consolidation**: Background memory hygiene
-- **retrospective**: Post-ticket learning documents
-- **proposal-execution**: Executing approved proposals
-- **ticket-management**: Creating and managing tickets
-- **orchestrator-workflow**: Agent coordination and assignment
-
-### 3. MCP Bridge
-
-JavaScript/TypeScript MCP server for Model Context Protocol communication.
-
-## Installation Options
-
-### Full Install (Recommended)
-
-```bash
-ruby -e "$(curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/main/scripts/install.rb)"
-```
-
-### Agent Bridge Only
-
-```bash
-ruby -e "$(curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/main/scripts/download-bridge.rb)"
-```
-
-### Skills Only
-
-Skills are downloaded as raw content from GitHub:
-
-```bash
-# Download a single skill
-mkdir -p .claude/skills/git-workflow
-curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/main/skills/git-workflow/SKILL.md \
-  -o .claude/skills/git-workflow/SKILL.md
-```
-
-Or run the installer with only skills:
-
-```bash
-INSTALL_BRIDGE=false ruby -e "$(curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/main/scripts/install.rb)"
-```
-
-### Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `VERSION` | `main` | Git ref (branch/tag) to download from |
-| `INSTALL_DIR` | `.claude` | Installation directory |
-| `INSTALL_SKILLS` | `true` | Whether to install skills |
-| `INSTALL_BRIDGE` | `true` | Whether to download agent-bridge |
-| `OUTPUT_DIR` | `.` | Output directory for bridge-only download |
-
-## Build from Source
-
-### Agent Bridge
-
-```bash
-# Clone main repository
-git clone https://github.com/RoM4iK/tinker.git
-cd tinker
-
-# Build for current platform
-go build -o agent-bridge agent-bridge.go
-
-# Or use the build script (multi-platform)
-ruby tinker-public/scripts/build-bridge.rb
-```
-
-### MCP Bridge
-
-```bash
-cd mcp-bridge
-npm install
-npm run build
-```
-
-## Directory Structure
-
-```
-tinker-public/
-├── bin/                    # Pre-built binaries
-│   ├── agent-bridge        # Linux amd64 (default)
-│   ├── agent-bridge-linux-arm64
-│   ├── agent-bridge-darwin-arm64
-│   └── ...
-├── skills/                 # Reusable skills
-│   ├── git-workflow/
-│   ├── worker-workflow/
-│   ├── researcher-workflow/
-│   └── ...
-├── scripts/                # Installation scripts (Ruby)
-│   ├── install.rb
-│   ├── download-bridge.rb
-│   └── build-bridge.rb
-└── README.md
-```
-
-## Migration Guide for Existing Repositories
-
-If you already have a Tinker setup with locally-built binaries:
-
-1. **Stop building locally:**
-   Remove any build steps that build `agent-bridge` locally.
-
-2. **Update your installation:**
-   ```bash
-   ruby -e "$(curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/main/scripts/install.rb)"
-   ```
-
-3. **Update your PATH:**
-   Ensure the `.claude/bin` directory is in your PATH:
-   ```bash
-   export PATH="$PATH:$(pwd)/.claude/bin"
-   ```
-
-4. **Update your config:**
-   Verify your `.claude/config.json` points to the correct binary locations.
-
-5. **Remove old binaries:**
-   Delete any locally-built binaries from your repository.
-
 ## Configuration
 
-The installer creates `.claude/config.json` if it doesn't exist:
-
-```json
-{
-  "skills": [
-    ".claude/skills/*/SKILL.md"
-  ],
-  "mcpServers": {
-    "tinker": {
-      "command": "node",
-      "args": ["mcp-bridge/dist/index.js"],
-      "env": {
-        "RAILS_URL": "http://localhost:3000",
-        "TINKER_PROJECT_ID": "1"
-      }
-    }
-  }
-}
-```
-
-## Contributing
-
-This is a distribution repository. For contributing to the core Tinker system, please see the main [tinker repository](https://github.com/RoM4iK/tinker).
-
-To sync changes from the main tinker repo:
+Create `.agent.env` in your project root:
 
 ```bash
-# In the main tinker repository
-bin/sync-tinker-public        # Sync skills and scripts
-bin/sync-tinker-public --push # Sync and push to GitHub
+# Required: Anthropic API (or compatible)
+ANTHROPIC_API_KEY=your-api-key
+
+# Required: GitHub authentication (choose one)
+# Option 1: GitHub App (recommended)
+GITHUB_APP_CLIENT_ID=your-client-id
+GITHUB_APP_INSTALLATION_ID=your-installation-id
+GITHUB_APP_PRIVATE_KEY_PATH=/path/to/private-key.pem
+
+# Option 2: Personal Access Token
+GH_TOKEN=your-github-token
+
+# Optional: Tinker backend
+RAILS_WS_URL=wss://your-tinker-instance/cable
+PROJECT_ID=1
 ```
+
+## Usage
+
+```bash
+# Start a worker agent
+./run-tinker-agent.rb worker
+
+# Start other agent types
+./run-tinker-agent.rb planner
+./run-tinker-agent.rb reviewer
+./run-tinker-agent.rb orchestrator
+
+# Attach to running agent
+./run-tinker-agent.rb attach worker
+```
+
+## How It Works
+
+1. `run-tinker-agent.rb` builds a Docker image using `Dockerfile.tinker`
+2. The Dockerfile downloads skills and agent-bridge from this repo
+3. Your project is copied into the container
+4. The agent runs in an isolated sandbox with full git access
+
+## Requirements
+
+- Docker
+- Ruby (for the bootstrap script)
+- Git repository with remote configured
 
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
 
-## Related Repositories
+## Related
 
 - [tinker](https://github.com/RoM4iK/tinker) - Main Tinker agent system
-- [tinker-public](https://github.com/RoM4iK/tinker-public) - This repository
