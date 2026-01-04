@@ -139,7 +139,35 @@ def run_agent(agent_type, config)
     docker_cmd += ["-e", "GIT_USER_EMAIL=#{git_config['user_email']}"] if git_config["user_email"]
   end
 
-  docker_cmd += [IMAGE_NAME, "agent-bridge-tmux"]
+  # Check for local setup-agent.rb (for development)
+  local_setup_script = File.join(File.dirname(__FILE__), "setup-agent.rb")
+  
+  # Check for local agent-bridge binaries (for development)
+  local_bridge = File.join(Dir.pwd, "bin", "agent-bridge")
+  local_tmux = File.join(File.dirname(__FILE__), "bin", "agent-bridge-tmux")
+  
+  mounts = []
+  if File.exist?(local_setup_script)
+    puts "🔧 Using local setup-agent.rb for development"
+    mounts += ["-v", "#{File.expand_path(local_setup_script)}:/tmp/setup-agent.rb:ro"]
+  end
+
+  if File.exist?(local_bridge)
+    puts "🔧 Using local agent-bridge binary"
+    mounts += ["-v", "#{local_bridge}:/tmp/agent-bridge:ro"]
+  end
+  
+  if File.exist?(local_tmux)
+    mounts += ["-v", "#{File.expand_path(local_tmux)}:/tmp/agent-bridge-tmux:ro"]
+  end
+
+  docker_cmd += mounts
+
+  if File.exist?(local_setup_script)
+    docker_cmd += [IMAGE_NAME, "ruby", "/tmp/setup-agent.rb"]
+  else
+    docker_cmd += [IMAGE_NAME]
+  end
 
   success = system(*docker_cmd)
 
@@ -173,9 +201,9 @@ def attach_to_agent(agent_type, config)
   end
 
   puts "📎 Attaching to #{agent_type} agent..."
-  # Attach to agent-wrapper session which has the status bar
+  # Attach to agent session which has the status bar
   # Must run as claude user since tmux server runs under that user
-  exec("docker", "exec", "-it", "-u", "claude", container_name, "tmux", "attach", "-t", "agent-wrapper")
+  exec("docker", "exec", "-it", "-u", "claude", container_name, "tmux", "attach", "-t", "agent")
 end
 
 def show_usage

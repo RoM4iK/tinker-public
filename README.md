@@ -1,114 +1,107 @@
-# Tinker Public
+# Tinker Agent
 
-Run Claude-based AI agents in any project.
+Run Tinker agents in any Docker container with Ruby.
 
 ## Quick Start
 
 ```bash
-# 1. Get the Dockerfile template
-curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/main/Dockerfile.sandbox.template \
-  -o Dockerfile.sandbox
-
-# 2. Get the config template
-curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/main/tinker.env.example.json \
-  -o tinker.env.json
-
-# 3. Edit tinker.env.json with your config
-
-# 4. Add to .gitignore (contains secrets)
-echo "tinker.env.json" >> .gitignore
-
-# 5. Run an agent
-npx tinker-agent worker
+# Inside your Docker container with Ruby installed:
+curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/main/tinker-agent.rb | \
+  AGENT_TYPE=worker \
+  PROJECT_ID=1 \
+  RAILS_WS_URL=wss://tinker.example.com/cable \
+  RAILS_API_URL=https://tinker.example.com/api/v1 \
+  RAILS_API_KEY=your-mcp-api-key \
+  GH_TOKEN=your-github-token \
+  ruby
 ```
 
-## Usage
+## Container Requirements
+
+Your Docker container needs:
+
+```dockerfile
+# Base: any Linux with Ruby 3.x
+FROM ruby:3.4-slim
+
+# Required packages
+RUN apt-get update && apt-get install -y \
+    git curl tmux nodejs npm
+
+# Claude CLI
+RUN npm install -g @anthropic-ai/claude-code
+
+# GitHub CLI (optional but recommended)
+RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | \
+    dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | \
+    tee /etc/apt/sources.list.d/github-cli.list && \
+    apt-get update && apt-get install -y gh
+```
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `AGENT_TYPE` | ✅ | `worker`, `planner`, `reviewer`, `orchestrator`, or `researcher` |
+| `PROJECT_ID` | ✅ | Your Tinker project ID |
+| `RAILS_WS_URL` | ✅ | WebSocket URL for agent communication |
+| `RAILS_API_URL` | | API URL for MCP tools |
+| `RAILS_API_KEY` | | MCP API key (get from Tinker dashboard) |
+| `GH_TOKEN` | | GitHub token for git operations |
+
+## Agent Types
+
+| Type | Mode | Purpose |
+|------|------|---------|
+| `planner` | Interactive | Chat with human, create tickets |
+| `worker` | Autonomous | Implement tickets, create PRs |
+| `reviewer` | Autonomous | Review PRs, approve/reject |
+| `orchestrator` | Autonomous | Assign work to agents |
+| `researcher` | Autonomous | Analyze codebase, document findings |
+
+## What the Script Does
+
+1. **Validates requirements** - Checks for Ruby, Node, tmux, git, claude CLI
+2. **Creates `.mcp.json`** - Configures MCP tools for the agent type
+3. **Creates `CLAUDE.md`** - Role-specific instructions Claude sees on startup
+4. **Sets up GitHub auth** - Configures `gh` CLI with your token
+5. **Downloads agent-bridge** - Binary that connects to Tinker via WebSocket
+6. **Starts tmux session** - With status bar showing connection state
+
+## Example: Docker Compose
+
+```yaml
+services:
+  tinker-worker:
+    image: ruby:3.4-slim
+    environment:
+      - AGENT_TYPE=worker
+      - PROJECT_ID=1
+      - RAILS_WS_URL=wss://tinker.example.com/cable
+      - RAILS_API_URL=https://tinker.example.com/api/v1
+      - RAILS_API_KEY=${WORKER_MCP_KEY}
+      - GH_TOKEN=${GITHUB_TOKEN}
+    volumes:
+      - ./:/app
+      - ~/.claude.json:/root/.claude.json:ro
+    working_dir: /app
+    command: >
+      bash -c "
+        apt-get update && apt-get install -y git curl tmux nodejs npm &&
+        npm install -g @anthropic-ai/claude-code &&
+        curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/main/tinker-agent.rb | ruby
+      "
+```
+
+## Attaching to Running Agent
 
 ```bash
-# Start agents (no install needed)
-npx tinker-agent worker
-npx tinker-agent planner
-npx tinker-agent reviewer
-npx tinker-agent orchestrator
-npx tinker-agent researcher
-
-# Attach to running agent
-npx tinker-agent attach worker
-
-# Stop agent
-docker stop myproject-worker
+docker exec -it <container> tmux attach -t agent-wrapper
 ```
 
-## Configuration (tinker.env.json)
-
-```json
-{
-  "project_id": 1,
-  "rails_ws_url": "wss://tinkerai.win/cable",
-  "rails_api_url": "https://tinkerai.win/api/v1",
-
-  "git": {
-    "user_name": "Tinker Agent",
-    "user_email": "tinker-agent@example.com"
-  },
-
-  "github": {
-    "method": "app",
-    "app_client_id": "Iv1.abc123",
-    "app_installation_id": "12345678",
-    "app_private_key_path": "/path/to/private-key.pem"
-  },
-
-  "agents": {
-    "worker": {
-      "mcp_api_key": "your-mcp-api-key",
-      "container_name": "myproject-worker"
-    }
-  }
-}
-```
-
-## Requirements
-
-- Docker
-- Ruby
-- Node.js (for npx)
-
-## What's in This Repo
-
-- `bin/agent-bridge` - Go binary for Claude ↔ Tinker communication
-- `bin/agent-bridge-tmux` - tmux wrapper script
-- `skills/*` - Reusable agent skills
-- `Dockerfile.sandbox.template` - Template for project Dockerfile
-- `tinker.env.example.json` - Example config
-- `run-tinker-agent.rb` - Launcher script (called via npx)
-
-## Skills Included
-
-- **git-workflow**: Branch management, commits, PRs
-- **worker-workflow**: Task execution, coordination
-- **reviewer-workflow**: PR review, code quality
-- **memory**: Knowledge sharing across sessions
-- **orchestrator-workflow**: Agent coordination
-- **researcher-workflow**: Research and proposals
-- **ticket-management**: Creating and managing tickets
-- And more...
-
-## How It Works
-
-1. `npx tinker-agent worker` downloads & runs the launcher
-2. Launcher reads `tinker.env.json` from current directory
-3. Builds Docker image using your `Dockerfile.sandbox`
-4. Runs container with your project mounted
-5. Inside container:
-   - Downloads skills from this repo
-   - Starts Claude in tmux via agent-bridge
-   - Connects to Tinker backend WebSocket
+Press `Ctrl+B` then `D` to detach.
 
 ## License
 
-MIT - see [LICENSE](LICENSE)
-
-## Related
-
-- [tinker](https://github.com/RoM4iK/tinker) - Main Tinker system
+MIT
