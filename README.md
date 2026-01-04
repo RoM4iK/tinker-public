@@ -1,71 +1,87 @@
 # Tinker Public
 
-Pre-built binaries and skills for the Tinker agent system.
+Run Claude-based AI agents in any project.
 
-## Quick Start (Any Project)
-
-Add Tinker agents to any repository with **ONE file**:
+## Quick Start
 
 ```bash
-# Download the script
-curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/main/run-tinker-agent.rb -o run-tinker-agent.rb
-chmod +x run-tinker-agent.rb
+# 1. Get the Dockerfile template
+curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/main/Dockerfile.sandbox.template \
+  -o Dockerfile.sandbox
 
-# Create credentials file
-echo "GH_TOKEN=your-github-token" > .agent.env
+# 2. Get the config template
+curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/main/tinker.env.example.json \
+  -o tinker.env.json
 
-# Run an agent
-./run-tinker-agent.rb worker
+# 3. Edit tinker.env.json with your config
+
+# 4. Add to .gitignore (contains secrets)
+echo "tinker.env.json" >> .gitignore
+
+# 5. Run an agent
+npx tinker-agent worker
 ```
-
-That's it! The script:
-1. Builds a Docker image (downloads skills & binaries from this repo)
-2. Mounts your project into the container
-3. Runs the agent with full git access
 
 ## Usage
 
 ```bash
-# Start an agent
-./run-tinker-agent.rb worker
-./run-tinker-agent.rb planner
-./run-tinker-agent.rb reviewer
-./run-tinker-agent.rb orchestrator
+# Start agents (no install needed)
+npx tinker-agent worker
+npx tinker-agent planner
+npx tinker-agent reviewer
+npx tinker-agent orchestrator
+npx tinker-agent researcher
 
 # Attach to running agent
-./run-tinker-agent.rb attach worker
+npx tinker-agent attach worker
 
 # Stop agent
-docker stop tinker-worker
+docker stop myproject-worker
 ```
 
-## Configuration (.agent.env)
+## Configuration (tinker.env.json)
 
-```bash
-# Required: GitHub access for git operations
-GH_TOKEN=your-github-token
+```json
+{
+  "project_id": 1,
+  "rails_ws_url": "wss://tinkerai.win/cable",
+  "rails_api_url": "https://tinkerai.win/api/v1",
 
-# Or use GitHub App (preferred for organizations)
-GITHUB_APP_CLIENT_ID=your-client-id
-GITHUB_APP_INSTALLATION_ID=your-installation-id
-GITHUB_APP_PRIVATE_KEY_PATH=/path/to/private-key.pem
+  "git": {
+    "user_name": "Tinker Agent",
+    "user_email": "tinker-agent@example.com"
+  },
 
-# Optional: Connect to Tinker backend
-RAILS_WS_URL=wss://your-tinker-instance/cable
-PROJECT_ID=1
+  "github": {
+    "method": "app",
+    "app_client_id": "Iv1.abc123",
+    "app_installation_id": "12345678",
+    "app_private_key_path": "/path/to/private-key.pem"
+  },
+
+  "agents": {
+    "worker": {
+      "mcp_api_key": "your-mcp-api-key",
+      "container_name": "myproject-worker"
+    }
+  }
+}
 ```
 
 ## Requirements
 
 - Docker
 - Ruby
-- Git (with remote configured)
+- Node.js (for npx)
 
-## What's Downloaded
+## What's in This Repo
 
-The Docker image fetches from this repo at build time:
 - `bin/agent-bridge` - Go binary for Claude ↔ Tinker communication
-- `skills/*` - Reusable agent skills (git-workflow, worker-workflow, etc.)
+- `bin/agent-bridge-tmux` - tmux wrapper script
+- `skills/*` - Reusable agent skills
+- `Dockerfile.sandbox.template` - Template for project Dockerfile
+- `tinker.env.example.json` - Example config
+- `run-tinker-agent.rb` - Launcher script (called via npx)
 
 ## Skills Included
 
@@ -74,8 +90,20 @@ The Docker image fetches from this repo at build time:
 - **reviewer-workflow**: PR review, code quality
 - **memory**: Knowledge sharing across sessions
 - **orchestrator-workflow**: Agent coordination
+- **researcher-workflow**: Research and proposals
 - **ticket-management**: Creating and managing tickets
 - And more...
+
+## How It Works
+
+1. `npx tinker-agent worker` downloads & runs the launcher
+2. Launcher reads `tinker.env.json` from current directory
+3. Builds Docker image using your `Dockerfile.sandbox`
+4. Runs container with your project mounted
+5. Inside container:
+   - Downloads skills from this repo
+   - Starts Claude in tmux via agent-bridge
+   - Connects to Tinker backend WebSocket
 
 ## License
 
