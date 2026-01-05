@@ -115,18 +115,28 @@ def run_agent(agent_type, config)
   # Add GitHub auth
   github = config["github"] || {}
   if github["method"] == "app"
+    key_path = File.expand_path(github["app_private_key_path"].to_s)
+
+    unless File.exist?(key_path) && !File.directory?(key_path)
+      puts "❌ Error: GitHub App private key not found at: #{key_path}"
+      puts "   Please check 'app_private_key_path' in tinker.env.json"
+      exit 1
+    end
+
     docker_cmd += [
       "-e", "GITHUB_APP_CLIENT_ID=#{github['app_client_id']}",
       "-e", "GITHUB_APP_INSTALLATION_ID=#{github['app_installation_id']}",
       # Path is set dynamically in entrypoint.sh based on user home
-      "-v", "#{github['app_private_key_path']}:/tmp/github-app-privkey.pem:ro"
+      "-v", "#{key_path}:/tmp/github-app-privkey.pem:ro"
     ]
     puts "🔐 Using GitHub App authentication"
   elsif github["token"]
     docker_cmd += ["-e", "GH_TOKEN=#{github['token']}"]
     puts "🔑 Using GitHub token authentication"
   else
-    puts "⚠️  Warning: No GitHub authentication configured"
+    puts "❌ Error: No GitHub authentication configured"
+    puts "   Please configure 'github' in tinker.env.json"
+    exit 1
   end
 
   # Add git config

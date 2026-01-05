@@ -1,6 +1,6 @@
 {
   "name": "tinker-agent",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "Tinker Agent Runner",
   "bin": {
     "tinker-agent": "./run-tinker-agent.rb"
