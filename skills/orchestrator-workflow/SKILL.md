@@ -1,6 +1,6 @@
 ---
 name: orchestrator-workflow
-description: Coordinates agent assignments, validates merge states, and manages ticket lifecycle.
+description: Coordinates agent assignments and manages ticket lifecycle.
 ---
 
 # SYSTEM ROLE
@@ -15,20 +15,11 @@ Tickets must move through this exact state flow:
     *   ❌ "Review #101 and #102"
     *   ✅ "Use /reviewer-workflow skill and review #101"
 2.  **IDLE CHECK:** Only assign work to agents with `availability_status: "idle"`.
-3.  **STATE VALIDATION:** Before assigning a ticket in `pending_audit` or `pending_approval`, you must verify the linked Pull Request status. If the PR is merged, the ticket is complete.
-4.  **SCOPE:** 
+3.  **SCOPE:**
     *   Do not manually approve tickets in `pending_approval` (Product Owner task).
-    *   **EXCEPTION:** You MUST move tickets from `pending_audit` or `pending_approval` to `done` if you detect their underlying PR is merged.
+    *   Merged PRs are automatically transitioned to `done` by the background job - no manual action needed.
 
 # ASSIGNMENT LOGIC
-
-## Priority 0: Cleanup & Validation (Run before assigning)
-**Trigger:** Tickets exist in `pending_audit` OR `pending_approval`.
-1.  `list_tickets(status: ["pending_audit", "pending_approval"])`
-2.  For each ticket found:
-    *   Check linked PR status (e.g., `get_pr_status`).
-    *   **IF MERGED:** `transition_ticket(ticket_id: X, event: "complete")` (Move to `done`). Do NOT assign to anyone.
-    *   **IF OPEN:** Proceed to Scenario B (for audits) or wait (for approval).
 
 ## Scenario A: Assigning New Work
 **Trigger:** Workers are idle, tickets exist in `todo`, and no higher priority tasks exist.
@@ -41,11 +32,10 @@ Tickets must move through this exact state flow:
 4.  `send_message_to_agent(agent_id: Y, message: "Use worker-workflow skill and work on ticket #X")`
 
 ## Scenario B: Assigning Reviews
-**Trigger:** Reviewers are idle AND tickets exist in `pending_audit` (and are confirmed OPEN).
+**Trigger:** Reviewers are idle AND tickets exist in `pending_audit`.
 1.  `list_members(role: "reviewer", availability_status: "idle")`
 2.  `list_tickets(status: "pending_audit", limit: 1)`
-3.  **VERIFY:** Ensure ticket is NOT merged (see Priority 0).
-4.  `send_message_to_agent(agent_id: Y, message: "Use /reviewer-workflow skill and review #X")`
+3.  `send_message_to_agent(agent_id: Y, message: "Use /reviewer-workflow skill and review #X")`
 
 ## Scenario C: Check for hanging items
 **Trigger:** Worker is in idle state, but tickets in `in_progress` status exist.
@@ -65,4 +55,3 @@ Tickets must move through this exact state flow:
 *   Writing code, creating migrations, or running tests.
 *   Making git commits.
 *   Batching assignments.
-*   Assigning a reviewer to a ticket that is already merged.

@@ -246,9 +246,6 @@ def setup_github_auth!
     puts "🔐 Configuring GitHub App authentication..."
 
     # Create helper script
-    helper_path = "/usr/local/bin/git-auth-helper"
-    
-    # We embed the helper script content here
     helper_content = <<~RUBY
       #!/usr/bin/env ruby
       require 'openssl'
@@ -308,27 +305,32 @@ def setup_github_auth!
       puts cached_token(app_id, installation_id, key_path)
     RUBY
 
-    # Only write if we have permission (we should as root or if /usr/local/bin is writable)
-    # If not, write to /tmp and use that
-    if File.writable?("/usr/local/bin")
-      File.write(helper_path, helper_content)
-      File.chmod(0755, helper_path)
-    else
-      helper_path = "/tmp/git-auth-helper"
-      File.write(helper_path, helper_content)
-      File.chmod(0755, helper_path)
-    end
+    # Install helper via sudo to /usr/local/bin
+    helper_path = "/usr/local/bin/git-auth-helper"
+    File.write("/tmp/git-auth-helper", helper_content)
+    system("sudo mv /tmp/git-auth-helper #{helper_path}")
+    system("sudo chmod +x #{helper_path}")
 
     # Configure git
     system("git config --global credential.helper '!f() { test \"$1\" = get && echo \"protocol=https\" && echo \"host=github.com\" && echo \"username=x-access-token\" && echo \"password=$(#{helper_path})\"; }; f'")
     
-    # Configure gh CLI
-    token = `#{helper_path}`.strip
-    if token.empty?
-      puts "❌ Failed to generate GitHub App token"
+    # Configure gh CLI wrapper for auto-refresh
+    real_gh_path = "/usr/bin/gh"
+    if File.exist?(real_gh_path)
+      wrapper_path = "/usr/local/bin/gh"
+      wrapper_content = <<~BASH
+        #!/bin/bash
+        # Auto-refresh GitHub token using git-auth-helper
+        export GH_TOKEN=$(#{helper_path})
+        exec #{real_gh_path} "$@"
+      BASH
+      
+      File.write("/tmp/gh-wrapper", wrapper_content)
+      system("sudo mv /tmp/gh-wrapper #{wrapper_path}")
+      system("sudo chmod +x #{wrapper_path}")
+      puts "✅ GitHub App authentication configured (with auto-refresh)"
     else
-      IO.popen("gh auth login --with-token 2>/dev/null", "w") { |io| io.puts token }
-      puts "✅ GitHub App authentication configured"
+      puts "⚠️  Could not find 'gh' at #{real_gh_path}, skipping wrapper"
     end
 
   elsif ENV["GH_TOKEN"] && !ENV["GH_TOKEN"].empty?

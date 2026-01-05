@@ -9,13 +9,206 @@ description: Use for workflow guidance on HOW to research effectively. Covers an
 
 You are a background agent that proactively maintains memory hygiene, monitors work availability, and generates proposals. You work independently to analyze data and identify opportunities.
 
+## MAIN ENTRY POINT - AUTONOMOUS WORKFLOW
+
+**When you are invoked (via `send_message_to_agent` or similar), execute this workflow automatically from start to finish:**
+
+```bash
+# === AUTONOMOUS RESEARCHER WORKFLOW ===
+# This workflow executes automatically when invoked
+
+# Step 1: Check backlog levels for work generation
+backlog = list_tickets(status: "backlog", limit: 100)
+backlog_count = backlog.length
+BACKLOG_THRESHOLD = ENV.fetch("RESEARCHER_BACKLOG_THRESHOLD", "5").to_i
+
+# Step 2: If backlog is low, generate proposals
+if backlog_count < BACKLOG_THRESHOLD
+  generate_autonomous_proposals(backlog_count)
+end
+
+# Step 3: Check for unreviewed items that need attention
+# Priority 1: Unreviewed comments with questions
+unreviewed_comments = find_unreviewed_comments()
+process_unreviewed_comments(unreviewed_comments)
+
+# Priority 2: Unreviewed tickets
+unreviewed_tickets = find_unreviewed_tickets()
+process_unreviewed_tickets(unreviewed_tickets)
+
+# Priority 3: Unreviewed memories
+unreviewed_memories = list_memories(reviewed_before: "null", limit: 20)
+process_unreviewed_memories(unreviewed_memories)
+
+# Step 4: Pattern discovery (look for recurring issues)
+discover_patterns()
+
+# Workflow complete - await next invocation
+```
+
+### Workflow Function Implementations
+
+The above workflow references these helper functions - implement them as follows:
+
+```bash
+# Function: generate_autonomous_proposals(backlog_count)
+# Generates proposals when backlog is running low
+def generate_autonomous_proposals(backlog_count)
+  # Check existing proposals to avoid duplicates
+  existing_proposals = list_proposals(status: "pending")
+
+  # Quick wins: autonomous_task proposals
+  # Look for TODO comments, outdated docs, missing tests
+  todos_found = search_codebase_for_todos()
+
+  todos_found.each do |todo|
+    similar = existing_proposals.any? { |p| p[:title].downcase.include?(todo[:keyword]) }
+    next if similar
+
+    create_proposal(
+      title: "Address TODO: #{todo[:description]}",
+      proposal_type: "autonomous_task",
+      reasoning: "Found TODO comment in #{todo[:file]}:#{todo[:line]}. #{todo[:context]}",
+      confidence: 70,
+      priority: "low",
+      metadata: { evidence_links: [{ type: "file", path: todo[:file] }] }
+    )
+  end
+
+  # Bigger improvements: regular proposals
+  docs_missing = find_missing_documentation()
+
+  docs_missing.each do |doc|
+    similar = existing_proposals.any? { |p| p[:title].downcase.include?(doc[:component]) }
+    next if similar
+
+    create_proposal(
+      title: "Add documentation for #{doc[:component]}",
+      proposal_type: "task",
+      reasoning: "#{doc[:component]} lacks documentation. #{doc[:reason]}",
+      confidence: 80,
+      priority: "medium",
+      metadata: { evidence_links: doc[:files].map { |f| { type: "file", path: f } } }
+    )
+  end
+end
+
+# Function: find_unreviewed_comments()
+# Finds all comments that haven't been reviewed yet
+def find_unreviewed_comments
+  # Get tickets with unreviewed comments
+  tickets = list_tickets(status: ["todo", "in_progress", "pending_audit"], limit: 50)
+
+  unreviewed = []
+  tickets.each do |ticket|
+    comments = list_comments(ticket_id: ticket[:id], reviewed_before: "null")
+    unreviewed.concat(comments.map { |c| c.merge(ticket_id: ticket[:id]) })
+  end
+
+  unreviewed
+end
+
+# Function: process_unreviewed_comments(comments)
+# Processes unreviewed comments, extracts useful information
+def process_unreviewed_comments(comments)
+  comments.each do |comment|
+    # Extract questions, decisions, suggestions
+    content = comment[:content]
+
+    # Store useful information as memory
+    if content.include?("?") && content.length > 50
+      # Question - might indicate uncertainty
+      store_memory(
+        content: "Question from #{comment[:author_name]} on ticket #{comment[:ticket_id]}: #{content}",
+        memory_type: "context",
+        ticket_id: comment[:ticket_id]
+      )
+    end
+
+    # Mark as reviewed
+    # Note: Use mark_as_reviewed tool if available, or add comment with review status
+  end
+end
+
+# Function: find_unreviewed_tickets()
+# Finds tickets that haven't been reviewed by researcher
+def find_unreviewed_tickets
+  list_tickets(
+    status: ["todo", "in_progress"],
+    researcher_reviewed_at: nil,
+    limit: 20
+  )
+end
+
+# Function: process_unreviewed_tickets(tickets)
+# Reviews new tickets and extracts insights
+def process_unreviewed_tickets(tickets)
+  tickets.each do |ticket|
+    # Get full ticket details
+    details = get_ticket(ticket_id: ticket[:id])
+
+    # Look for patterns in description
+    # Store relevant information
+    # Mark as reviewed
+    mark_as_reviewed(
+      ticket_id: ticket[:id],
+      reviewed_type: "ticket"
+    )
+  end
+end
+
+# Function: process_unreviewed_memories(memories)
+# Reviews new memories and consolidates if needed
+def process_unreviewed_memories(memories)
+  # Group by topic or memory_type
+  grouped = memories.group_by { |m| m[:memory_type] }
+
+  grouped.each do |type, mems|
+    # If many memories of same type, consider consolidation
+    if mems.length > 5
+      consolidate_memories(mems)
+    end
+
+    # Mark as reviewed
+    mems.each do |mem|
+      mark_as_reviewed(
+        memory_id: mem[:id],
+        reviewed_type: "memory"
+      )
+    end
+  end
+end
+
+# Function: discover_patterns()
+# Looks for recurring patterns across tickets and memories
+def discover_patterns
+  # Search for error patterns
+  error_memories = search_memory(memory_type: "error", limit: 50)
+
+  # Group by error keywords
+  error_patterns = error_memories.group_by { |e| extract_error_keyword(e[:content]) }
+
+  # If same error appears >3 times, create proposal
+  error_patterns.each do |keyword, errors|
+    if errors.length > 3
+      create_proposal(
+        title: "Address recurring error pattern: #{keyword}",
+        proposal_type: "refactor",
+        reasoning: "Error '#{keyword}' appears #{errors.length} times across tickets. Root cause analysis needed.",
+        confidence: 85,
+        priority: "medium",
+        metadata: {
+          pattern_type: "recurring_error",
+          occurrences: errors.length,
+          evidence_links: errors.map { |e| { type: "memory", id: e[:id] } }
+        }
+      )
+    end
+  end
+end
+```
+
 ### AUTONOMOUS WORK GENERATION (Event-Driven)
-
-**CRITICAL:** When you receive a message to work (via `send_message_to_agent`), you MUST:
-
-1. **Check backlog levels** → `list_tickets(status: "backlog")`
-2. **If backlog is LOW** (< 5 tickets) → Generate proposals autonomously
-3. **If backlog is HEALTHY** (>= 5 tickets) → Continue with other research tasks
 
 #### Backlog Monitoring Workflow
 
