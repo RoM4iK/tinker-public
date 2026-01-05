@@ -191,10 +191,21 @@ def setup_mcp_config!
   existing_config["mcpServers"] ||= {}
 
   if rails_api_url && !rails_api_url.empty? && rails_api_key && !rails_api_key.empty?
-    # Use published tinker-mcp package
+    # Install tinker-mcp locally to ensure we can run it with node (bypassing shebang issues)
+    tools_dir = File.expand_path("~/tinker-tools")
+    FileUtils.mkdir_p(tools_dir)
+    
+    puts "📦 Installing tinker-mcp..."
+    # Redirect output to avoid cluttering logs, unless it fails
+    unless system("npm install --prefix #{tools_dir} tinker-mcp > /dev/null 2>&1")
+      puts "❌ Failed to install tinker-mcp"
+    end
+    
+    script_path = "#{tools_dir}/node_modules/tinker-mcp/dist/index.js"
+
     tinker_server_config = {
-      "command" => "npx",
-      "args" => ["-y", "tinker-mcp"],
+      "command" => "node",
+      "args" => [script_path],
       "env" => {
         "RAILS_API_URL" => rails_api_url,
         "RAILS_API_KEY" => rails_api_key
