@@ -364,23 +364,27 @@ def download_agent_bridge!
   puts "✅ agent-bridge installed to #{target_dir}"
   
   # Patch agent-bridge-tmux to force INSIDE_TMUX=1
+  # Note: This is now fixed in the repo, but we keep this for backward compatibility
+  # with older agent-bridge-tmux scripts if cached
   puts "🔧 Patching agent-bridge-tmux to force INSIDE_TMUX=1..."
   
   # Read the file (we can read /usr/local/bin files usually)
   content = File.read("#{target_dir}/agent-bridge-tmux")
   
-  # Replace the command
-  new_content = content.gsub(
-    "&& agent-bridge\"", 
-    "&& export INSIDE_TMUX=1 && agent-bridge\""
-  )
-  
-  # Write to temp file
-  File.write("/tmp/agent-bridge-tmux-patched", new_content)
-  
-  # Move to destination with sudo
-  system("sudo mv /tmp/agent-bridge-tmux-patched #{target_dir}/agent-bridge-tmux")
-  system("sudo chmod +x #{target_dir}/agent-bridge-tmux")
+  # Replace the command if not already present
+  unless content.include?("export INSIDE_TMUX=1")
+    new_content = content.gsub(
+      "&& agent-bridge\"", 
+      "&& export INSIDE_TMUX=1 && agent-bridge\""
+    )
+    
+    # Write to temp file
+    File.write("/tmp/agent-bridge-tmux-patched", new_content)
+    
+    # Move to destination with sudo
+    system("sudo mv /tmp/agent-bridge-tmux-patched #{target_dir}/agent-bridge-tmux")
+    system("sudo chmod +x #{target_dir}/agent-bridge-tmux")
+  end
   
   return target_dir
 end
