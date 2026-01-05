@@ -326,7 +326,18 @@ def setup_github_auth!
 end
 
 def download_agent_bridge!
-  bridge_url = "#{TINKER_RAW_URL}/bin/agent-bridge"
+  # Detect architecture
+  arch = `uname -m`.strip
+  if arch == "x86_64"
+    arch = "amd64"
+  elsif arch == "aarch64" || arch == "arm64"
+    arch = "arm64"
+  else
+    puts "❌ Unsupported architecture: #{arch}"
+    exit 1
+  end
+
+  bridge_url = "#{TINKER_RAW_URL}/bin/agent-bridge-linux-#{arch}"
   bridge_tmux_url = "#{TINKER_RAW_URL}/bin/agent-bridge-tmux"
   target_dir = "/usr/local/bin"
 
@@ -336,7 +347,7 @@ def download_agent_bridge!
     system("sudo cp /tmp/agent-bridge #{target_dir}/agent-bridge")
     system("sudo chmod +x #{target_dir}/agent-bridge")
   else
-    puts "📥 Downloading agent-bridge..."
+    puts "📥 Downloading agent-bridge for linux-#{arch}..."
     system("sudo curl -fsSL #{bridge_url} -o #{target_dir}/agent-bridge")
     system("sudo chmod +x #{target_dir}/agent-bridge")
   end

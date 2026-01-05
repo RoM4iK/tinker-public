@@ -1,3 +1,5 @@
 bin/agent-bridge
+bin/agent-bridge-linux-amd64
+bin/agent-bridge-linux-arm64
 .git
 .gitignore
