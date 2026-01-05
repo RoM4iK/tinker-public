@@ -60,19 +60,23 @@ set -e
 
 # Copy config files if they exist in /tmp (mounted volumes)
 if [ -f "/tmp/cfg/claude.json" ]; then
-  cp /tmp/cfg/claude.json ${AGENT_HOME}/.claude.json
+  cp /tmp/cfg/claude.json ${AGENT_HOME}/.claude.json || echo "⚠️ Failed to copy claude.json"
 fi
 if [ -d "/tmp/cfg/claude_dir" ]; then
   rm -rf ${AGENT_HOME}/.claude
-  cp -r /tmp/cfg/claude_dir ${AGENT_HOME}/.claude
+  cp -r /tmp/cfg/claude_dir ${AGENT_HOME}/.claude || echo "⚠️ Failed to copy claude_dir"
 fi
 if [ -f "/tmp/github-app-privkey.pem" ]; then
-  cp /tmp/github-app-privkey.pem ${AGENT_HOME}/.github-app-privkey.pem
-  chmod 600 ${AGENT_HOME}/.github-app-privkey.pem
+  cp /tmp/github-app-privkey.pem ${AGENT_HOME}/.github-app-privkey.pem || echo "⚠️ Failed to copy github key"
+  chmod 600 ${AGENT_HOME}/.github-app-privkey.pem 2>/dev/null || true
 fi
 
 # Fix permissions
-chown -R ${AGENT_USER}:${GROUP_NAME} ${AGENT_HOME}
+sudo chown -R ${AGENT_USER}:${GROUP_NAME} ${AGENT_HOME} || echo "⚠️ Failed to chown home"
+
+# Fix permissions of the current directory (project root)
+# This ensures the agent can write CLAUDE.md and .mcp.json
+sudo chown ${AGENT_USER}:${GROUP_NAME} $(pwd) || echo "⚠️ Failed to chown project root"
 
 # Set GitHub App Key Path if not set
 if [ -z "\$GITHUB_APP_PRIVATE_KEY_PATH" ]; then

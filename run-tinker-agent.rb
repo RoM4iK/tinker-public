@@ -94,7 +94,7 @@ def run_agent(agent_type, config)
   File.write(banner_path, agent_def[:banner])
 
   docker_cmd = [
-    "docker", "run", "-d", "--rm",
+    "docker", "run", "-d",
     "--name", container_name,
     "--network=host",
     # Mount Claude config
@@ -203,9 +203,24 @@ def attach_to_agent(agent_type, config)
   end
 
   puts "📎 Attaching to #{agent_type} agent..."
+  
+  # Determine the user to attach as
+  # We assume the agent is running as the user with the same UID as the host user
+  # (since that's how we build the image)
+  uid = Process.uid
+  user = `docker exec #{container_name} getent passwd #{uid} | cut -d: -f1`.strip
+  
+  if user.empty?
+    # Fallback to 'claude' if detection fails (e.g. different UID mapping)
+    puts "⚠️  Could not detect agent user for UID #{uid}, defaulting to 'claude'"
+    user = "claude"
+  end
+
+  puts "   User: #{user} (UID: #{uid})"
+
   # Attach to agent session which has the status bar
-  # Must run as claude user since tmux server runs under that user
-  exec("docker", "exec", "-it", "-u", "claude", container_name, "tmux", "attach", "-t", "agent")
+  # Must run as agent user since tmux server runs under that user
+  exec("docker", "exec", "-it", "-u", user, container_name, "tmux", "attach", "-t", "agent")
 end
 
 def show_usage
