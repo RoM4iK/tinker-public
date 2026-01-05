@@ -205,18 +205,22 @@ def attach_to_agent(agent_type, config)
   puts "📎 Attaching to #{agent_type} agent..."
   
   # Determine the user to attach as
-  # We assume the agent is running as the user with the same UID as the host user
-  # (since that's how we build the image)
-  uid = Process.uid
-  user = `docker exec #{container_name} getent passwd #{uid} | cut -d: -f1`.strip
+  # First try to detect the user the container is running as
+  user = `docker exec #{container_name} whoami 2>/dev/null`.strip
   
   if user.empty?
-    # Fallback to 'claude' if detection fails (e.g. different UID mapping)
-    puts "⚠️  Could not detect agent user for UID #{uid}, defaulting to 'claude'"
-    user = "claude"
+    # Fallback: try to match host UID
+    uid = Process.uid
+    user = `docker exec #{container_name} getent passwd #{uid} | cut -d: -f1`.strip
+  end
+  
+  if user.empty?
+    # Fallback: default to rails (standard for this image)
+    user = "rails"
+    puts "⚠️  Could not detect agent user, defaulting to '#{user}'"
   end
 
-  puts "   User: #{user} (UID: #{uid})"
+  puts "   User: #{user}"
 
   # Attach to agent session which has the status bar
   # Must run as agent user since tmux server runs under that user
