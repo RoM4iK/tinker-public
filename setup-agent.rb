@@ -123,24 +123,6 @@ AGENT_BANNERS = {
   BANNER
 }
 
-def check_requirements!
-  missing = []
-  missing << "ruby" unless system("which ruby > /dev/null 2>&1")
-  missing << "node" unless system("which node > /dev/null 2>&1")
-  missing << "tmux" unless system("which tmux > /dev/null 2>&1")
-  missing << "git" unless system("which git > /dev/null 2>&1")
-  missing << "claude" unless system("which claude > /dev/null 2>&1")
-
-  unless missing.empty?
-    puts "❌ Missing requirements: #{missing.join(', ')}"
-    puts ""
-    puts "Install with:"
-    puts "  apt-get install -y tmux git curl"
-    puts "  npm install -g @anthropic-ai/claude-code"
-    exit 1
-  end
-end
-
 def check_env!
   required = %w[AGENT_TYPE PROJECT_ID RAILS_WS_URL]
   missing = required.select { |var| ENV[var].to_s.empty? }
@@ -437,7 +419,6 @@ puts "🤖 Tinker Agent Setup"
 puts "====================="
 puts ""
 
-check_requirements!
 check_env!
 setup_mcp_config!
 setup_claude_config!

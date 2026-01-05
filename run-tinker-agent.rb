@@ -112,12 +112,6 @@ def run_agent(agent_type, config)
     "-e", "RAILS_API_KEY=#{agent_config['mcp_api_key']}"
   ]
 
-  # Add Anthropic config
-  if (anthropic = config["anthropic"])
-    docker_cmd += ["-e", "ANTHROPIC_BASE_URL=#{anthropic['base_url']}"] if anthropic["base_url"]
-    docker_cmd += ["-e", "ANTHROPIC_MODEL=#{anthropic['model']}"] if anthropic["model"]
-  end
-
   # Add GitHub auth
   github = config["github"] || {}
   if github["method"] == "app"
