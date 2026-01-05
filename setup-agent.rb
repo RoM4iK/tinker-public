@@ -171,38 +171,48 @@ end
 def setup_mcp_config!
   # MCP config is project-specific and should be provided by the Dockerfile
   # or mounted at runtime. This script only checks if it exists.
+  
+  agent_type = ENV["AGENT_TYPE"]
+  rails_api_url = ENV["RAILS_API_URL"]
+  rails_api_key = ENV["RAILS_API_KEY"]
+  
+  # Load existing config if present
+  existing_config = {}
   if File.exist?(".mcp.json")
-    puts "✅ Found existing .mcp.json"
-  else
-    agent_type = ENV["AGENT_TYPE"]
-    rails_api_url = ENV["RAILS_API_URL"]
-    rails_api_key = ENV["RAILS_API_KEY"]
+    begin
+      existing_config = JSON.parse(File.read(".mcp.json"))
+      puts "✅ Found existing .mcp.json, merging configuration..."
+    rescue JSON::ParserError
+      puts "⚠️  Existing .mcp.json is invalid, starting fresh"
+    end
+  end
+  
+  # Ensure mcpServers key exists
+  existing_config["mcpServers"] ||= {}
 
-    if rails_api_url && !rails_api_url.empty? && rails_api_key && !rails_api_key.empty?
-      # Fallback: create config using local mcp-bridge if it exists
-      mcp_bridge_path = "/rails/mcp-bridge/dist/index.js"
-      if File.exist?(mcp_bridge_path)
-        mcp_config = {
-          "mcpServers" => {
-            "tinker-#{agent_type}" => {
-              "command" => "node",
-              "args" => [mcp_bridge_path],
-              "env" => {
-                "RAILS_API_URL" => rails_api_url,
-                "RAILS_API_KEY" => rails_api_key
-              }
-            }
-          }
-        }
-        File.write(".mcp.json", JSON.pretty_generate(mcp_config))
-        puts "📝 Created .mcp.json with tinker-#{agent_type} server"
-      else
-        File.write(".mcp.json", JSON.generate({ "mcpServers" => {} }))
-        puts "ℹ️  No mcp-bridge found - MCP tools disabled"
-      end
-    else
+  if rails_api_url && !rails_api_url.empty? && rails_api_key && !rails_api_key.empty?
+    # Use published tinker-mcp package
+    tinker_server_config = {
+      "command" => "npx",
+      "args" => ["-y", "tinker-mcp"],
+      "env" => {
+        "RAILS_API_URL" => rails_api_url,
+        "RAILS_API_KEY" => rails_api_key
+      }
+    }
+    
+    # Add/Update tinker server config
+    existing_config["mcpServers"]["tinker-#{agent_type}"] = tinker_server_config
+    
+    File.write(".mcp.json", JSON.pretty_generate(existing_config))
+    puts "📝 Updated .mcp.json with tinker-#{agent_type} server (using tinker-mcp)"
+  else
+    # Only write if we don't have existing config
+    if existing_config["mcpServers"].empty?
       File.write(".mcp.json", JSON.generate({ "mcpServers" => {} }))
       puts "ℹ️  No MCP API credentials - MCP tools disabled"
+    else
+      puts "ℹ️  No MCP API credentials - keeping existing config"
     end
   end
 end

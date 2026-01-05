@@ -2,41 +2,24 @@
 
 Run Tinker agents in any Docker container with Ruby.
 
-## Quick Start
+## Setup
 
-```bash
-# Inside your Docker container with Ruby installed:
-curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/main/tinker-agent.rb | \
-  AGENT_TYPE=worker \
-  PROJECT_ID=1 \
-  RAILS_WS_URL=wss://tinker.example.com/cable \
-  RAILS_API_URL=https://tinker.example.com/api/v1 \
-  RAILS_API_KEY=your-mcp-api-key \
-  GH_TOKEN=your-github-token \
-  ruby
-```
-
-## Container Requirements
-
-Your Docker container needs:
+1. Create `Dockerfile.sandbox` in your project root (copy your existing Dockerfile).
+2. Add the following lines to `Dockerfile.sandbox`:
 
 ```dockerfile
-# Base: any Linux with Ruby 3.x
-FROM ruby:3.4-slim
+# --- TINKER AGENT SETUP ---
+ARG TINKER_VERSION=main
+RUN curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/${TINKER_VERSION}/bin/install-agent.sh | bash
 
-# Required packages
-RUN apt-get update && apt-get install -y \
-    git curl tmux nodejs npm
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["bash", "-c", "curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/${TINKER_VERSION:-main}/setup-agent.rb | ruby"]
+```
 
-# Claude CLI
-RUN npm install -g @anthropic-ai/claude-code
+## Usage
 
-# GitHub CLI (optional but recommended)
-RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | \
-    dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg && \
-    echo "deb [signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | \
-    tee /etc/apt/sources.list.d/github-cli.list && \
-    apt-get update && apt-get install -y gh
+```bash
+npx tinker-agent worker
 ```
 
 ## Environment Variables
@@ -88,9 +71,8 @@ services:
     working_dir: /app
     command: >
       bash -c "
-        apt-get update && apt-get install -y git curl tmux nodejs npm &&
-        npm install -g @anthropic-ai/claude-code &&
-        curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/main/tinker-agent.rb | ruby
+        curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/main/bin/install-agent.sh | bash &&
+        curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/main/setup-agent.rb | ruby
       "
 ```
 

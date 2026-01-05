@@ -40,8 +40,10 @@ def check_dockerfile!
   unless File.exist?("Dockerfile.sandbox")
     puts "❌ Error: Dockerfile.sandbox not found"
     puts ""
-    puts "Create it:"
-    puts "  curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/main/Dockerfile.sandbox.template -o Dockerfile.sandbox"
+    puts "Please create Dockerfile.sandbox by copying your existing Dockerfile"
+    puts "and adding the required agent dependencies."
+    puts ""
+    puts "See https://github.com/RoM4iK/tinker-public/blob/main/README.md for instructions."
     exit 1
   end
 end
@@ -122,7 +124,7 @@ def run_agent(agent_type, config)
     docker_cmd += [
       "-e", "GITHUB_APP_CLIENT_ID=#{github['app_client_id']}",
       "-e", "GITHUB_APP_INSTALLATION_ID=#{github['app_installation_id']}",
-      "-e", "GITHUB_APP_PRIVATE_KEY_PATH=/home/claude/.github-app-privkey.pem",
+      # Path is set dynamically in entrypoint.sh based on user home
       "-v", "#{github['app_private_key_path']}:/tmp/github-app-privkey.pem:ro"
     ]
     puts "🔐 Using GitHub App authentication"
@@ -213,7 +215,7 @@ def show_usage
   puts "       npx tinker-agent attach [agent-type]"
   puts ""
   puts "Setup:"
-  puts "  1. curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/main/Dockerfile.sandbox.template -o Dockerfile.sandbox"
+  puts "  1. Create Dockerfile.sandbox (see https://github.com/RoM4iK/tinker-public/blob/main/README.md)"
   puts "  2. curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/main/tinker.env.example.json -o tinker.env.json"
   puts "  3. Edit tinker.env.json with your config"
   puts "  4. echo 'tinker.env.json' >> .gitignore"
