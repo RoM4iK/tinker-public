@@ -9,7 +9,8 @@
     "run-tinker-agent.rb",
     "agents.rb",
     "setup-agent.rb",
-    "bin/"
+    "bin/agent-bridge-tmux",
+    "bin/install-agent.sh"
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
