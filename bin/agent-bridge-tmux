@@ -35,6 +35,8 @@ tmux new-session -d -s "$SESSION" -x "$COLS" -y "$LINES"
 tmux set-option -t "$SESSION" status on
 tmux set-option -t "$SESSION" status-interval 1
 tmux set-option -t "$SESSION" status-style "bg=black,fg=white"
+tmux set-option -t "$SESSION" status-left-length 50
+tmux set-option -t "$SESSION" status-right-length 150
 tmux set-option -t "$SESSION" status-left "#[fg=cyan,bold]🤖 $AGENT_TYPE #[fg=cyan]│ "
 tmux set-option -t "$SESSION" status-right "#[fg=green]#(cat $STATUS_FILE 2>/dev/null || echo '❓') #[fg=cyan]│ #[fg=white]%H:%M:%S"
 tmux set-option -t "$SESSION" window-status-format ""
