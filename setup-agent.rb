@@ -217,6 +217,27 @@ def setup_mcp_config!
   end
 end
 
+def setup_claude_config!
+  home_claude_json = File.expand_path("~/.claude.json")
+
+  if File.exist?(home_claude_json)
+    puts "🔧 Configuring claude.json..."
+    begin
+      claude_config = JSON.parse(File.read(home_claude_json))
+      
+      # Add bypass permission at top level
+      claude_config["bypassPermissionsModeAccepted"] = true
+      
+      File.write(home_claude_json, JSON.pretty_generate(claude_config))
+      puts "✅ claude.json configured with bypass permissions"
+    rescue JSON::ParserError
+      puts "⚠️  claude.json is invalid, skipping configuration"
+    end
+  else
+    puts "⚠️  claude.json not found at #{home_claude_json}"
+  end
+end
+
 def setup_claude_md!
   agent_type = ENV["AGENT_TYPE"]
   banner = AGENT_BANNERS[agent_type]
@@ -408,6 +429,7 @@ puts ""
 check_requirements!
 check_env!
 setup_mcp_config!
+setup_claude_config!
 setup_claude_md!
 setup_github_auth!
 bin_dir = download_agent_bridge!
