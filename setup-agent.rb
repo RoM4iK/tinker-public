@@ -341,6 +341,24 @@ def setup_github_auth!
   end
 end
 
+def setup_git_config!
+  # Configure identity if provided
+  if ENV["GIT_USER_NAME"] && !ENV["GIT_USER_NAME"].empty?
+    system("git config --global user.name \"#{ENV['GIT_USER_NAME']}\"")
+    puts "✅ Git user.name configured"
+  end
+
+  if ENV["GIT_USER_EMAIL"] && !ENV["GIT_USER_EMAIL"].empty?
+    system("git config --global user.email \"#{ENV['GIT_USER_EMAIL']}\"")
+    puts "✅ Git user.email configured"
+  end
+
+  # Force HTTPS instead of SSH to ensure our token auth works
+  # This fixes "Permission denied (publickey)" when the repo uses git@github.com remote
+  system("git config --global url.\"https://github.com/\".insteadOf \"git@github.com:\"")
+  puts "✅ Git configured to force HTTPS for GitHub"
+end
+
 def download_agent_bridge!
   # Detect architecture
   arch = `uname -m`.strip
@@ -426,5 +444,6 @@ setup_mcp_config!
 setup_claude_config!
 setup_claude_md!
 setup_github_auth!
+setup_git_config!
 bin_dir = download_agent_bridge!
 run_agent!(bin_dir)
