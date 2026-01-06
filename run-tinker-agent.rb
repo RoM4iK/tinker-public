@@ -100,11 +100,9 @@ def run_agent(agent_type, config)
     # Mount Claude config
     "-v", "#{ENV['HOME']}/.claude.json:/tmp/cfg/claude.json:ro",
     "-v", "#{ENV['HOME']}/.claude:/tmp/cfg/claude_dir:ro",
-    # Mount agent banner for CLAUDE.md
     "-v", "#{banner_path}:/tmp/agent-banner.txt:ro",
-    # Skills are downloaded inside container (see entrypoint)
     "-e", "TINKER_VERSION=main",
-    # Pass config as env vars
+    "-e", "SKILLS=#{agent_def[:skills]&.join(',')}",
     "-e", "AGENT_TYPE=#{agent_type}",
     "-e", "PROJECT_ID=#{config['project_id']}",
     "-e", "RAILS_WS_URL=#{config['rails_ws_url']}",

@@ -162,6 +162,54 @@ def setup_claude_md!
   end
 end
 
+def setup_skills!
+  skills = ENV["SKILLS"].to_s.split(",")
+  return if skills.empty?
+
+  skills_dir = ".claude/skills"
+  puts "🧠 Installing #{skills.size} skills to #{skills_dir}..."
+  FileUtils.mkdir_p(skills_dir)
+  
+  skills.each do |skill|
+    puts "   - #{skill}"
+    
+    # Try local copy first (dev mode, or if copied into image)
+    # Check both PWD/tinker-public/skills or PWD/skills (depending on how image was built)
+    local_paths = [
+      File.join(Dir.pwd, "tinker-public", "skills", skill, "SKILL.md"),
+      File.join(Dir.pwd, "skills", skill, "SKILL.md"),
+      "/tmp/skills/#{skill}/SKILL.md" # For legacy mounts
+    ]
+    
+    skill_content = nil
+    
+    local_paths.each do |path|
+      if File.exist?(path)
+        skill_content = File.read(path)
+        puts "     (from local: #{path})"
+        break
+      end
+    end
+    
+    url = "#{TINKER_RAW_URL}/skills/#{skill}/SKILL.md"
+
+    begin
+      unless skill_content
+        skill_content = URI.open(url).read
+      end
+      
+      # Write to .claude/skills/[skill]/SKILL.md with proper structure
+      skill_dir = File.join(skills_dir, skill)
+      FileUtils.mkdir_p(skill_dir)
+      File.write(File.join(skill_dir, "SKILL.md"), skill_content)
+    rescue OpenURI::HTTPError, Errno::ENOENT => e
+      puts "⚠️  Failed to download skill #{skill}: #{e.message}"
+    end
+  end
+  
+  puts "✅ Skills installed"
+end
+
 def setup_github_auth!
   app_id = ENV["GITHUB_APP_ID"] || ENV["GITHUB_APP_CLIENT_ID"]
   
@@ -373,6 +421,7 @@ check_env!
 setup_mcp_config!
 setup_claude_config!
 setup_claude_md!
+setup_skills!
 setup_github_auth!
 setup_git_config!
 bin_dir = download_agent_bridge!
