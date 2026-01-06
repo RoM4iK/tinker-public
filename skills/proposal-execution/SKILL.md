@@ -15,15 +15,29 @@ Use `execute_proposal` when:
 - Your proposal has been **approved** (status = "approved")
 - You want to perform the action described in the proposal
 
-## Important: Two-Step Workflow for task, autonomous_task, and skill_proposal
+## Important: Workflow Separation
 
-For `task`, `autonomous_task`, and `skill_proposal` types, execution does **NOT** automatically create the artifact (ticket or skill file). Instead:
+### Immediate-Execution Proposals (Use execute_proposal)
+- `memory_cleanup`: Deletes memories immediately when executed
+- `test_gap`: Creates a ticket automatically when executed
 
-1. **Execute the proposal** → Returns "ready_for_*" message
-2. **Do your research** → Investigate the codebase, gather context
-3. **Create the artifact** → Use `create_ticket_from_proposal` or create the skill file manually
+These use `execute_proposal` because the service performs the action immediately.
 
-This allows researchers to do proper research after approval but before creating artifacts.
+### Research-Required Proposals (Use create_ticket_from_proposal directly)
+- `task`: Requires research before ticket creation
+- `autonomous_task`: Requires research before ticket creation (reviewer-approved)
+- `skill_proposal`: Requires research before skill file creation
+- `refactor`: Requires research before ticket creation
+
+**DO NOT use `execute_proposal` for these types.** Instead:
+1. Wait for proposal approval (human or reviewer)
+2. Do your research (investigate codebase, understand requirements)
+3. Use `create_ticket_from_proposal` to create the ticket directly
+
+The `create_ticket_from_proposal` function will:
+- Accept proposals with status "approved"
+- Mark the proposal as "executed" when the ticket is created
+- Handle the status transition automatically
 
 **Key differences:**
 - `autonomous_task` and `test_gap` can be approved by reviewer (not requiring human approval)
@@ -51,20 +65,15 @@ execute_proposal(proposal_id: 42)
 ```
 
 ### task
-Marks the proposal as ready for ticket creation. Does NOT create a ticket automatically.
+**DO NOT use `execute_proposal` for task proposals.**
 
-**Execution result:**
-```json
-{
-  "action": "ready_for_ticket_creation",
-  "message": "Proposal approved. Use create_ticket_from_proposal to create the ticket after your research."
-}
-```
+After approval (human), use `create_ticket_from_proposal` directly:
+1. Wait for proposal approval (by human)
+2. Do your research (investigate codebase, understand requirements)
+3. Use `create_ticket_from_proposal` to create the ticket
+4. The proposal will be marked as executed when the ticket is created
 
-**Next steps:**
-1. Do your research (investigate codebase, understand requirements)
-2. Use `create_ticket_from_proposal` to create the ticket
-3. The proposal will be marked as executed when the ticket is created
+**Note:** Task proposals require human approval and tickets start in **draft** status.
 
 ### task (withdrawal)
 If the proposal has `metadata.target_proposal_id`, it withdraws the target proposal instead of creating a ticket.
@@ -79,25 +88,21 @@ If the proposal has `metadata.target_proposal_id`, it withdraws the target propo
 ```
 
 ### autonomous_task
-Marks the proposal as ready for ticket creation. Same as `task`, but can be approved by reviewer (not requiring human approval). Created tickets start in **backlog** status.
+**DO NOT use `execute_proposal` for autonomous_task proposals.**
 
-**Execution result:**
-```json
-{
-  "action": "ready_for_ticket_creation",
-  "message": "Proposal approved. Use create_ticket_from_proposal to create the ticket after your research.",
-  "workflow": "autonomous"
-}
-```
+After approval (by reviewer), use `create_ticket_from_proposal` directly:
+1. Wait for proposal approval (by reviewer)
+2. Do your research (investigate codebase, understand requirements)
+3. Use `create_ticket_from_proposal` to create the ticket
+4. Ticket will be created in **backlog** status (not draft)
+5. The proposal will be marked as executed when the ticket is created
 
-**Next steps:**
-1. Do your research (investigate codebase, understand requirements)
-2. Use `create_ticket_from_proposal` to create the ticket
-3. Ticket will be created in **backlog** status (not draft)
-4. The proposal will be marked as executed when the ticket is created
+**Note:** Autonomous_task proposals can be approved by reviewer (not requiring human approval).
 
 ### refactor
-Creates a refactor ticket automatically with evidence links.
+**Special case: refactor proposals DO use `execute_proposal` and auto-create tickets.**
+
+The backend handles refactor proposals differently - when you execute a refactor proposal, it automatically creates the ticket with evidence links.
 
 **Execution result:**
 ```json
@@ -107,6 +112,13 @@ Creates a refactor ticket automatically with evidence links.
   "ticket_title": "Refactor: Improve database query performance"
 }
 ```
+
+**Workflow:**
+1. Wait for proposal approval (by human)
+2. Use `execute_proposal` - ticket is created automatically with evidence links
+3. No need for `create_ticket_from_proposal`
+
+**Note:** Refactor is the only ticket-creation type that still uses `execute_proposal` (for backward compatibility).
 
 ### test_gap
 Creates a ticket for adding tests automatically. Starts in **backlog** status (autonomous workflow).
@@ -121,21 +133,16 @@ Creates a ticket for adding tests automatically. Starts in **backlog** status (a
 ```
 
 ### skill_proposal
-Marks the proposal as ready for skill file creation. Does NOT create the skill file automatically.
+**DO NOT use `execute_proposal` for skill_proposal proposals.**
 
-**Execution result:**
-```json
-{
-  "action": "ready_for_skill_creation",
-  "message": "Proposal approved. Create the skill file after your research.",
-  "skill_name": "code_review_helper"
-}
-```
+After approval (human), use `create_ticket_from_proposal` directly:
+1. Wait for proposal approval (by human)
+2. Do your research (understand requirements, check existing skills)
+3. Use `create_ticket_from_proposal` to create a ticket for the skill file
+4. Create the skill file manually (.claude/skills/my-skill/SKILL.md)
+5. The proposal will be marked as executed when the ticket is created
 
-**Next steps:**
-1. Do your research (understand requirements, check existing skills)
-2. Use `create_ticket_from_proposal` to create the ticket
-3. The proposal will be marked as executed when the ticket is created
+**Note:** Skill proposals require human approval. The ticket tracks the skill file creation work.
 
 ## Example Workflows
 
@@ -165,11 +172,10 @@ execute_proposal(proposal_id: 42)
 # => Marks proposal #42 as "executed"
 ```
 
-### Task (Two-Step Workflow)
+### Task (Direct to create_ticket_from_proposal)
 ```ruby
-# 1. Execute the proposal
-execute_proposal(proposal_id: 43)
-# => Returns "ready_for_ticket_creation"
+# 1. Wait for proposal approval (by human)
+# Proposal #43 status: "approved"
 
 # 2. Do your research
 memories = search_memory("authentication patterns")
@@ -185,11 +191,10 @@ create_ticket_from_proposal(
 # => Creates ticket and marks proposal #43 as "executed"
 ```
 
-### Autonomous Task (Two-Step Workflow, Reviewer Approval)
+### Autonomous Task (Direct to create_ticket_from_proposal, Reviewer Approval)
 ```ruby
-# 1. Execute the proposal (approved by reviewer, not human)
-execute_proposal(proposal_id: 44)
-# => Returns "ready_for_ticket_creation", workflow: "autonomous"
+# 1. Wait for proposal approval (by reviewer)
+# Proposal #44 status: "approved"
 
 # 2. Do your research
 memories = search_memory("documentation patterns")
@@ -206,18 +211,25 @@ create_ticket_from_proposal(
 # => Marks proposal #44 as "executed"
 ```
 
-### Skill Proposal (Two-Step Workflow)
+### Skill Proposal (Direct to create_ticket_from_proposal)
 ```ruby
-# 1. Execute the proposal
-execute_proposal(proposal_id: 44)
-# => Returns "ready_for_skill_creation"
+# 1. Wait for proposal approval (by human)
+# Proposal #45 status: "approved"
 
 # 2. Do your research
 # ... understand skill requirements ...
 
-# 3. Create the skill file manually
+# 3. Create a ticket for the skill file
+create_ticket_from_proposal(
+  proposal_id: 45,
+  title: "Create code review helper skill",
+  description: "Skill should help with PR review workflow...",
+  ticket_type: "task"
+)
+# => Creates ticket and marks proposal #45 as "executed"
+
+# 4. Create the skill file manually when working on the ticket
 # Create .claude/skills/my-custom-skill/SKILL.md
-# => Proposal #44 is already marked as "executed"
 ```
 
 ## Error Handling
