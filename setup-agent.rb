@@ -38,90 +38,8 @@ require "time"
 TINKER_VERSION = ENV["TINKER_VERSION"] || "main"
 TINKER_RAW_URL = "https://raw.githubusercontent.com/RoM4iK/tinker-public/#{TINKER_VERSION}"
 
-# Agent banners - role-specific instructions for Claude
-AGENT_BANNERS = {
-  "planner" => <<~BANNER,
-    ╔════════════════════════════════════════════════════════════════════════════╗
-    ║                       TINKER PLANNER - ROLE ENFORCEMENT                    ║
-    ╠════════════════════════════════════════════════════════════════════════════╣
-    ║  YOUR ROLE: INTERACTIVE PLANNING AND TICKET CREATION                       ║
-    ║  YOUR MODE: CHAT WITH HUMAN - DISCUSS, PLAN, CREATE TICKETS                ║
-    ╚════════════════════════════════════════════════════════════════════════════╝
-
-    This session is running as the TINKER PLANNER agent in INTERACTIVE CHAT MODE.
-
-    CORE RESPONSIBILITIES:
-      ✓ Discuss feature ideas and requirements with the human
-      ✓ Break down large features into implementable tickets
-      ✓ Write clear ticket descriptions with acceptance criteria
-      ✓ Create tickets using create_ticket MCP tool when plans are confirmed
-  BANNER
-
-  "worker" => <<~BANNER,
-    ╔════════════════════════════════════════════════════════════════════════════╗
-    ║                        TINKER WORKER - ROLE ENFORCEMENT                    ║
-    ╠════════════════════════════════════════════════════════════════════════════╣
-    ║  YOUR ROLE: AUTONOMOUS CODE IMPLEMENTATION                                 ║
-    ║  YOUR MODE: WORK AUTONOMOUSLY ON ASSIGNED TICKETS                          ║
-    ╚════════════════════════════════════════════════════════════════════════════╝
-
-    This session is running as the TINKER WORKER agent in AUTONOMOUS MODE.
-
-    CORE RESPONSIBILITIES:
-      ✓ Check for assigned tickets using get_my_tickets MCP tool
-      ✓ Implement code changes according to ticket specifications
-      ✓ Create branches, commits, and pull requests
-      ✓ Update ticket status as you progress
-  BANNER
-
-  "reviewer" => <<~BANNER,
-    ╔════════════════════════════════════════════════════════════════════════════╗
-    ║                       TINKER REVIEWER - ROLE ENFORCEMENT                   ║
-    ╠════════════════════════════════════════════════════════════════════════════╣
-    ║  YOUR ROLE: AUTONOMOUS CODE REVIEW                                         ║
-    ║  YOUR MODE: REVIEW PULL REQUESTS AND PROVIDE FEEDBACK                      ║
-    ╚════════════════════════════════════════════════════════════════════════════╝
-
-    This session is running as the TINKER REVIEWER agent in AUTONOMOUS MODE.
-
-    CORE RESPONSIBILITIES:
-      ✓ Check for PRs awaiting review
-      ✓ Review code quality, tests, and documentation
-      ✓ Approve or request changes with clear feedback
-  BANNER
-
-  "orchestrator" => <<~BANNER,
-    ╔════════════════════════════════════════════════════════════════════════════╗
-    ║                     TINKER ORCHESTRATOR - ROLE ENFORCEMENT                 ║
-    ╠════════════════════════════════════════════════════════════════════════════╣
-    ║  YOUR ROLE: AUTONOMOUS WORK COORDINATION                                   ║
-    ║  YOUR MODE: ASSIGN TICKETS AND MANAGE WORKFLOW                             ║
-    ╚════════════════════════════════════════════════════════════════════════════╝
-
-    This session is running as the TINKER ORCHESTRATOR agent in AUTONOMOUS MODE.
-
-    CORE RESPONSIBILITIES:
-      ✓ Monitor ticket queue and agent availability
-      ✓ Assign tickets to workers based on capacity
-      ✓ Track progress and handle blockers
-  BANNER
-
-  "researcher" => <<~BANNER
-    ╔════════════════════════════════════════════════════════════════════════════╗
-    ║                      TINKER RESEARCHER - ROLE ENFORCEMENT                  ║
-    ╠════════════════════════════════════════════════════════════════════════════╣
-    ║  YOUR ROLE: AUTONOMOUS RESEARCH AND ANALYSIS                               ║
-    ║  YOUR MODE: INVESTIGATE CODEBASE AND DOCUMENT FINDINGS                     ║
-    ╚════════════════════════════════════════════════════════════════════════════╝
-
-    This session is running as the TINKER RESEARCHER agent in AUTONOMOUS MODE.
-
-    CORE RESPONSIBILITIES:
-      ✓ Analyze codebase architecture and patterns
-      ✓ Research best practices and solutions
-      ✓ Document findings in memory for other agents
-  BANNER
-}
+# Valid agent types
+VALID_AGENT_TYPES = %w[planner worker reviewer orchestrator researcher]
 
 def check_env!
   required = %w[AGENT_TYPE PROJECT_ID RAILS_WS_URL]
@@ -143,9 +61,9 @@ def check_env!
   end
 
   agent_type = ENV["AGENT_TYPE"]
-  unless AGENT_BANNERS.key?(agent_type)
+  unless VALID_AGENT_TYPES.include?(agent_type)
     puts "❌ Invalid AGENT_TYPE: #{agent_type}"
-    puts "   Valid types: #{AGENT_BANNERS.keys.join(', ')}"
+    puts "   Valid types: #{VALID_AGENT_TYPES.join(', ')}"
     exit 1
   end
 end
@@ -233,10 +151,15 @@ end
 
 def setup_claude_md!
   agent_type = ENV["AGENT_TYPE"]
-  banner = AGENT_BANNERS[agent_type]
-
-  File.write("CLAUDE.md", banner)
-  puts "📝 Created CLAUDE.md with #{agent_type} instructions"
+  
+  if File.exist?("/tmp/agent-banner.txt")
+    banner = File.read("/tmp/agent-banner.txt")
+    File.write("CLAUDE.md", banner)
+    puts "📝 Created CLAUDE.md with instructions from /tmp/agent-banner.txt"
+  else
+    puts "❌ /tmp/agent-banner.txt not found! Cannot set up CLAUDE.md"
+    exit 1
+  end
 end
 
 def setup_github_auth!
