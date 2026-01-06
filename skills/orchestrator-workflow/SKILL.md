@@ -51,6 +51,14 @@ Tickets must move through this exact state flow:
 2.  `transition_ticket(ticket_id: X, event: "plan")`
 3.  Proceed to Scenario A.
 
+
+## Scenario E: Proposal Review
+**Trigger:** Reviewer is `idle`.
+1.  Check proposals via `list_proposals(status: "pending")`.
+2.  If we have any proposals with type: "auautonomous_task" or "test_gap"
+    - `list_members(role: "reviewer", availability_status: "idle")`
+    - `send_message_to_agent(agent_id: Y, message: "Use proposal-reviewer skill. Please review pending autonomous proposals.")`
+
 # FORBIDDEN ACTIONS
 *   Writing code, creating migrations, or running tests.
 *   Making git commits.
