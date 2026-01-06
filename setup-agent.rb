@@ -285,24 +285,31 @@ def setup_github_auth!
         { token: data['token'], expires_at: Time.parse(data['expires_at']) }
       end
 
-      def cached_token(app_id, installation_id, key_path)
+      def find_or_create_cached_token(app_id, installation_id, key_path)
         cache_file = '/tmp/github-app-token-cache'
-        if File.exist?(cache_file)
-          cache = JSON.parse(File.read(cache_file))
-          expires_at = Time.parse(cache['expires_at'])
-          return cache['token'] if expires_at > Time.now + 300
-        end
+        cached_token = read_cached_token(cache_file)
+        return cached_token if cached_token
+
         jwt = generate_jwt(app_id, key_path)
         token_data = get_installation_token(jwt, installation_id)
         File.write(cache_file, token_data.to_json)
         token_data[:token]
       end
 
+      def read_cached_token(cache_file)
+        return nil unless File.exist?(cache_file)
+        cache = JSON.parse(File.read(cache_file))
+        expires_at = Time.parse(cache['expires_at'])
+        return cache['token'] if expires_at > Time.now + 300
+        nil
+      rescue
+      end
+
       app_id = ENV['GITHUB_APP_CLIENT_ID'] || ENV['GITHUB_APP_ID']
       installation_id = ENV['GITHUB_APP_INSTALLATION_ID']
       key_path = ENV['GITHUB_APP_PRIVATE_KEY_PATH']
 
-      puts cached_token(app_id, installation_id, key_path)
+      puts find_or_create_cached_token(app_id, installation_id, key_path)
     RUBY
 
     # Install helper via sudo to /usr/local/bin
