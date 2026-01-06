@@ -7,6 +7,8 @@ description: Use for workflow guidance on HOW to work effectively. Covers task e
 
 ## ⚠️ CRITICAL: Git Branch Hygiene
 
+**Refer to `git-workflow` skill for detailed instructions.**
+
 **BEFORE starting ANY new ticket, ALWAYS:**
 
 1. **Check if ticket already has a PR** → Use `get_ticket()` to check `pull_request_url`
@@ -46,7 +48,7 @@ You receive assigned tickets and implement them. When uncertain, escalate rather
 ### Work Cycle
 
 1. **Receive ticket** → Check git branch → `mark_busy()`
-2. **Implement** → Use git-workflow skill
+2. **Implement** → Use **git-workflow** skill (detailed below)
 3. **Create PR** → Update ticket with PR URL
 4. **Submit for review** → `submit_for_review(ticket_id)`
 5. **Mark available** → `mark_idle()`
@@ -60,6 +62,13 @@ You receive assigned tickets and implement them. When uncertain, escalate rather
 - ✅ Investigate bugs and issues
 - ✅ Read code to understand context
 - ✅ Explore the codebase to find ALL affected files
+
+### Git Workflow tasks
+Follow instructions in `git-workflow` skill.
+- ✅ Create branch
+- ✅ Commit changes
+- ✅ Create Pull Request
+- ...
 
 ### Coordination Tasks
 - ✅ Check git branch BEFORE starting new ticket

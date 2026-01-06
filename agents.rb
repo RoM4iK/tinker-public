@@ -217,7 +217,7 @@ AGENT_CONFIGS = {
   },
   'reviewer' => {
     name: 'tinker-autonomous-reviewer',
-    skills: ['review-workflow', 'memory'],
+    skills: ['review-workflow', 'memory', 'proposal-reviewer'],
     banner: <<~BANNER
       ╔════════════════════════════════════════════════════════════════════════════╗
       ║                      TINKER REVIEWER - ROLE ENFORCEMENT                    ║
@@ -298,7 +298,7 @@ AGENT_CONFIGS = {
   },
   'researcher' => {
     name: 'tinker-autonomous-researcher',
-    skills: ['researcher-workflow', 'memory'],
+    skills: ['researcher-workflow', 'memory', 'proposal-execution', 'memory-consolidation', 'retrospective'],
     banner: <<~BANNER
       ╔════════════════════════════════════════════════════════════════════════════╗
       ║                     TINKER RESEARCHER - ROLE ENFORCEMENT                   ║

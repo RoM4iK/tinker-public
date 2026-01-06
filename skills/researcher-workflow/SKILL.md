@@ -70,6 +70,18 @@ You are not a linter. You are the **Lead Architect Agent**.
 3.  **Action:**
     *   If gaps found in *recent* work -> Create `autonomous_task` (Immediate fix) or `task` (if complex).
 
+### Protocol D: Retrospective Analysis
+*Rationale: Learn from the past to improve the future.*
+
+**Algorithm:**
+1.  **Trigger:** After a completed significant milestone or time period.
+2.  **Analysis:**
+    *   Review `retrospective` memories.
+    *   Identify recurring themes (successes, failures, blockers).
+3.  **Action:**
+    *   Synthesize findings into a `memory` (e.g., "Retrospective: Sprint 24 Lessons").
+    *   Propose process improvements via `proposal` (Type: `refactor` or `task`).
+
 ---
 
 ## 4. Proposal Taxonomy & Quality Gates
