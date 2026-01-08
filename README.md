@@ -16,10 +16,55 @@ ENTRYPOINT ["/entrypoint.sh"]
 CMD ["bash", "-c", "curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/${TINKER_VERSION:-main}/setup-agent.rb | ruby"]
 ```
 
-## Usage
+## Configuration (tinker.env.rb)
 
-```bash
-npx tinker-agent worker
+Agents are configured via a `tinker.env.rb` file in your project root. This Ruby file allows you to define configuration and secrets (using heredocs).
+
+**Do not commit `tinker.env.rb` to git!** Add it to your `.gitignore`.
+
+Example `tinker.env.rb`:
+
+```ruby
+{
+  project_id: 2,
+  rails_ws_url: "wss://tinkerai.win/cable",
+  rails_api_url: "https://tinker.tinkerai.win/api/v1",
+
+  # Git Identity
+  git: {
+    user_name: "Tinker Agent",
+    user_email: "agent@example.com"
+  },
+
+  # GitHub Auth (App or Token)
+  github: {
+    method: "app",
+    app_client_id: "Iv23liFDGt4FWGJSHAS",
+    app_installation_id: "102387777",
+    app_private_key_path: "/absolute/path/to/key.pem"
+  },
+
+  # Agent Specific Config
+  agents: {
+    worker: {
+      mcp_api_key: "...",
+      container_name: "tinker-worker"
+    },
+    planner: {
+      mcp_api_key: "...",
+      container_name: "tinker-planner"
+    }
+  },
+
+  # Environment Variables Injection
+  # Simple strings or Heredocs supported
+  dot_env: <<~ENV
+    PORT=3200
+    DB_HOST=localhost
+    SECRET_KEY_BASE=very_secret
+    OPENAI_API_KEY=sk-...
+  ENV
+}
 ```
 
 ## Environment Variables

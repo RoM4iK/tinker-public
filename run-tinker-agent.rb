@@ -9,7 +9,7 @@
 #   - Docker
 #   - Ruby
 #   - Dockerfile.sandbox in project root
-#   - tinker.env.json in project root (gitignored)
+#   - tinker.env.rb in project root (gitignored)
 
 require "json"
 
@@ -21,19 +21,55 @@ IMAGE_NAME = "tinker-sandbox"
 AGENT_TYPES = AGENT_CONFIGS.keys.freeze
 
 def load_config
-  config_file = File.join(Dir.pwd, "tinker.env.json")
-
-  unless File.exist?(config_file)
-    puts "❌ Error: tinker.env.json not found in current directory"
+  # Support Ruby config for heredocs and comments (tinker.env.rb)
+  rb_config_file = File.join(Dir.pwd, "tinker.env.rb")
+  
+  unless File.exist?(rb_config_file)
+    puts "❌ Error: tinker.env.rb not found in current directory"
     puts ""
-    puts "Create it:"
-    puts "  curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/main/tinker.env.example.json -o tinker.env.json"
-    puts "  # Edit with your project config"
-    puts "  echo 'tinker.env.json' >> .gitignore"
+    puts "Create tinker.env.rb:"
+    puts "  {"
+    puts "    project_id: 1,"
+    puts "    rails_ws_url: '...',"
+    puts "    # ..."
+    puts "    # Paste your stripped .env content here:"
+    puts "    dot_env: <<~ENV"
+    puts "      STRIPE_KEY=sk_test_..."
+    puts "      OPENAI_KEY=sk-..."
+    puts "    ENV"
+    puts "  }"
+    puts "  echo 'tinker.env.rb' >> .gitignore"
     exit 1
   end
 
-  JSON.parse(File.read(config_file))
+  puts "⚙️  Loading configuration from tinker.env.rb"
+  config = eval(File.read(rb_config_file), binding, rb_config_file)
+  
+  # Convert symbols to strings for easier handling before JSON normalization
+  config = config.transform_keys(&:to_s)
+  
+  # Parse dot_env heredoc if present
+  if (dotenv = config["dot_env"])
+    config["env"] ||= {}
+    # Ensure env is string-keyed
+    config["env"] = config["env"].transform_keys(&:to_s)
+    
+    dotenv.each_line do |line|
+      line = line.strip
+      next if line.empty? || line.start_with?('#')
+      k, v = line.split('=', 2)
+      next unless k && v
+      # Remove surrounding quotes and trailing comments (simple)
+      v = v.strip.gsub(/^['"]|['"]$/, '')
+      config["env"][k.strip] = v
+    end
+    
+    config.delete("dot_env")
+    puts "🌿 Parsed dot_env into #{config['env'].size} environment variables"
+  end
+
+  # Normalize symbols to strings for consistency via JSON round-trip
+  JSON.parse(JSON.generate(config))
 end
 
 def check_dockerfile!
@@ -97,6 +133,17 @@ def run_agent(agent_type, config)
     "docker", "run", "-d",
     "--name", container_name,
     "--network=host",
+  ]
+
+  # Inject custom environment variables from config
+  if (custom_env = config["env"])
+    custom_env.each do |k, v|
+      docker_cmd += ["-e", "#{k}=#{v}"]
+    end
+    puts "🌿 Injected #{custom_env.size} custom env vars from config"
+  end
+
+  docker_cmd += [
     # Mount Claude config
     "-v", "#{ENV['HOME']}/.claude.json:/tmp/cfg/claude.json:ro",
     "-v", "#{ENV['HOME']}/.claude:/tmp/cfg/claude_dir:ro",
@@ -117,7 +164,7 @@ def run_agent(agent_type, config)
 
     unless File.exist?(key_path) && !File.directory?(key_path)
       puts "❌ Error: GitHub App private key not found at: #{key_path}"
-      puts "   Please check 'app_private_key_path' in tinker.env.json"
+      puts "   Please check 'app_private_key_path' in tinker.env.rb"
       exit 1
     end
 
@@ -133,7 +180,7 @@ def run_agent(agent_type, config)
     puts "🔑 Using GitHub token authentication"
   else
     puts "❌ Error: No GitHub authentication configured"
-    puts "   Please configure 'github' in tinker.env.json"
+    puts "   Please configure 'github' in tinker.env.rb"
     exit 1
   end
 
@@ -193,15 +240,17 @@ def attach_to_agent(agent_type, config)
     exit 1
   end
 
+  agent_def = AGENT_CONFIGS[agent_type]
   agent_config = config.dig("agents", agent_type) || {}
-  container_name = agent_config["container_name"] || "tinker-#{agent_type}"
+  container_name = agent_config["container_name"] || agent_def[:name]
 
   running = `docker ps --filter name=^#{container_name}$ --format '{{.Names}}'`.strip
 
   if running.empty?
-    puts "❌ #{agent_type} agent is not running"
-    puts "   Start with: npx tinker-agent #{agent_type}"
-    exit 1
+    puts "⚠️  #{agent_type} agent is not running. Auto-starting..."
+    build_docker_image
+    run_agent(agent_type, config)
+    sleep 3
   end
 
   puts "📎 Attaching to #{agent_type} agent..."
@@ -224,6 +273,14 @@ def attach_to_agent(agent_type, config)
 
   puts "   User: #{user}"
 
+  # Wait for tmux session to be ready
+  10.times do
+    if system("docker", "exec", "-u", user, container_name, "tmux", "has-session", "-t", "agent", err: File::NULL, out: File::NULL)
+      break
+    end
+    sleep 1
+  end
+
   # Attach to agent session which has the status bar
   # Must run as agent user since tmux server runs under that user
   exec("docker", "exec", "-it", "-u", user, container_name, "tmux", "attach", "-t", "agent")
@@ -237,10 +294,9 @@ def show_usage
   puts ""
   puts "Setup:"
   puts "  1. Create Dockerfile.sandbox (see https://github.com/RoM4iK/tinker-public/blob/main/README.md)"
-  puts "  2. curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/main/tinker.env.example.json -o tinker.env.json"
-  puts "  3. Edit tinker.env.json with your config"
-  puts "  4. echo 'tinker.env.json' >> .gitignore"
-  puts "  5. npx tinker-agent worker"
+  puts "  2. Create tinker.env.rb (see https://github.com/RoM4iK/tinker-public/blob/main/README.md)"
+  puts "  3. echo 'tinker.env.rb' >> .gitignore"
+  puts "  4. npx tinker-agent worker"
   exit 1
 end
 
