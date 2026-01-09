@@ -194,7 +194,15 @@ def run_agent(agent_type, config)
   local_setup_script = File.join(File.dirname(__FILE__), "setup-agent.rb")
   
   # Check for local agent-bridge binaries (for development)
-  local_bridge = File.join(Dir.pwd, "bin", "agent-bridge")
+  # Priority: 
+  # 1. Linux binary matching host arch (for proper container execution)
+  # 2. Legacy bin/agent-bridge if it's a binary (not script)
+
+  arch = `uname -m`.strip
+  linux_arch = (arch == "x86_64") ? "amd64" : "arm64"
+  linux_bridge = File.join(Dir.pwd, "tinker-public", "bin", "agent-bridge-linux-#{linux_arch}")
+  
+  local_bridge_default = File.join(Dir.pwd, "bin", "agent-bridge")
   local_tmux = File.join(File.dirname(__FILE__), "bin", "agent-bridge-tmux")
   
   mounts = []
@@ -203,9 +211,18 @@ def run_agent(agent_type, config)
     mounts += ["-v", "#{File.expand_path(local_setup_script)}:/tmp/setup-agent.rb:ro"]
   end
 
-  if File.exist?(local_bridge)
-    puts "🔧 Using local agent-bridge binary"
-    mounts += ["-v", "#{local_bridge}:/tmp/agent-bridge:ro"]
+  if File.exist?(linux_bridge)
+    puts "🔧 Using local linux binary: #{linux_bridge}"
+    mounts += ["-v", "#{linux_bridge}:/tmp/agent-bridge:ro"]
+  elsif File.exist?(local_bridge_default)
+    # Check if it's a binary or script
+    is_script = File.read(local_bridge_default, 4) == "#!/b"
+    if is_script
+       puts "⚠️  bin/agent-bridge is a host wrapper script. Please run 'bin/build-bridge' to generate linux binaries."
+    else
+       puts "🔧 Using local agent-bridge binary"
+       mounts += ["-v", "#{local_bridge_default}:/tmp/agent-bridge:ro"]
+    end
   end
   
   if File.exist?(local_tmux)
