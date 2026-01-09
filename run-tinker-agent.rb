@@ -12,11 +12,18 @@
 #   - tinker.env.rb in project root (gitignored)
 
 require "json"
+require "fileutils"
 
 # Load agent configs
 require_relative "agents"
 
-IMAGE_NAME = "tinker-sandbox"
+def image_name(config)
+  if config["project_id"]
+    "tinker-sandbox-#{config['project_id']}"
+  else
+    "tinker-sandbox"
+  end
+end
 
 AGENT_TYPES = AGENT_CONFIGS.keys.freeze
 
@@ -84,7 +91,7 @@ def check_dockerfile!
   end
 end
 
-def build_docker_image
+def build_docker_image(config)
   check_dockerfile!
 
   user_id = `id -u`.strip
@@ -92,14 +99,42 @@ def build_docker_image
 
   puts "🏗️  Building Docker image..."
 
-  success = system(
-    "docker", "build",
-    "--build-arg", "USER_ID=#{user_id}",
-    "--build-arg", "GROUP_ID=#{group_id}",
-    "-t", IMAGE_NAME,
-    "-f", "Dockerfile.sandbox",
-    "."
-  )
+  # Handle .dockerignore.sandbox
+  dockerignore_sandbox = ".dockerignore.sandbox"
+  dockerignore_original = ".dockerignore"
+  dockerignore_backup = ".dockerignore.bak"
+
+  has_sandbox_ignore = File.exist?(dockerignore_sandbox)
+  has_original_ignore = File.exist?(dockerignore_original)
+
+  if has_sandbox_ignore
+    puts "📦 Swapping .dockerignore with .dockerignore.sandbox..."
+    if has_original_ignore
+      FileUtils.mv(dockerignore_original, dockerignore_backup)
+    end
+    FileUtils.cp(dockerignore_sandbox, dockerignore_original)
+  end
+
+  success = false
+  begin
+    success = system(
+      "docker", "build",
+      "--build-arg", "USER_ID=#{user_id}",
+      "--build-arg", "GROUP_ID=#{group_id}",
+      "-t", image_name(config),
+      "-f", "Dockerfile.sandbox",
+      "."
+    )
+  ensure
+    if has_sandbox_ignore
+      # Restore original state
+      FileUtils.rm(dockerignore_original) if File.exist?(dockerignore_original)
+      if has_original_ignore
+        FileUtils.mv(dockerignore_backup, dockerignore_original)
+      end
+      puts "🧹 Restored original .dockerignore"
+    end
+  end
 
   unless success
     puts "❌ Failed to build Docker image"
@@ -232,9 +267,9 @@ def run_agent(agent_type, config)
   docker_cmd += mounts
 
   if File.exist?(local_setup_script)
-    docker_cmd += [IMAGE_NAME, "ruby", "/tmp/setup-agent.rb"]
+    docker_cmd += [image_name(config), "ruby", "/tmp/setup-agent.rb"]
   else
-    docker_cmd += [IMAGE_NAME]
+    docker_cmd += [image_name(config)]
   end
 
   success = system(*docker_cmd)
@@ -265,7 +300,7 @@ def attach_to_agent(agent_type, config)
 
   if running.empty?
     puts "⚠️  #{agent_type} agent is not running. Auto-starting..."
-    build_docker_image
+    build_docker_image(config)
     run_agent(agent_type, config)
     sleep 3
   end
@@ -329,6 +364,6 @@ if command == "attach"
   attach_to_agent(agent_type, config)
 else
   config = load_config
-  build_docker_image
+  build_docker_image(config)
   run_agent(command, config)
 end
