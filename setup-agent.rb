@@ -213,7 +213,15 @@ end
 def setup_github_auth!
   app_id = ENV["GITHUB_APP_ID"] || ENV["GITHUB_APP_CLIENT_ID"]
   
-  if app_id && ENV["GITHUB_APP_INSTALLATION_ID"] && ENV["GITHUB_APP_PRIVATE_KEY_PATH"]
+  # Check for private key in typical locations
+  # 1. In the home directory (copied by entrypoint)
+  # 2. In /tmp (mounted by docker)
+  private_key_path = [
+    File.expand_path("~/.github-app-privkey.pem"),
+    "/tmp/github-app-privkey.pem"
+  ].find { |path| File.exist?(path) }
+
+  if app_id && ENV["GITHUB_APP_INSTALLATION_ID"] && private_key_path
     puts "🔐 Configuring GitHub App authentication..."
 
     # Create helper script
@@ -278,7 +286,7 @@ def setup_github_auth!
 
       app_id = ENV['GITHUB_APP_CLIENT_ID'] || ENV['GITHUB_APP_ID']
       installation_id = ENV['GITHUB_APP_INSTALLATION_ID']
-      key_path = ENV['GITHUB_APP_PRIVATE_KEY_PATH']
+      key_path = "#{private_key_path}"
 
       puts find_or_create_cached_token(app_id, installation_id, key_path)
     RUBY

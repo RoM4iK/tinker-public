@@ -78,16 +78,6 @@ sudo chown -R ${AGENT_USER}:${GROUP_NAME} ${AGENT_HOME} || echo "⚠️ Failed t
 # This ensures the agent can write CLAUDE.md and .mcp.json
 sudo chown ${AGENT_USER}:${GROUP_NAME} $(pwd) || echo "⚠️ Failed to chown project root"
 
-# Set GitHub App Key Path if not set
-if [ -z "\$GITHUB_APP_PRIVATE_KEY_PATH" ]; then
-  export GITHUB_APP_PRIVATE_KEY_PATH="${AGENT_HOME}/.github-app-privkey.pem"
-else
-  # If it was set to /home/claude/... but we are /home/node, fix it
-  if [[ "\$GITHUB_APP_PRIVATE_KEY_PATH" == *"/home/claude/"* ]] && [ "${AGENT_HOME}" != "/home/claude" ]; then
-    export GITHUB_APP_PRIVATE_KEY_PATH="${AGENT_HOME}/.github-app-privkey.pem"
-  fi
-fi
-
 # Execute command as agent user
 exec sudo -E -u ${AGENT_USER} env "HOME=${AGENT_HOME}" "\$@"
 EOF
