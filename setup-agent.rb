@@ -234,11 +234,13 @@ def setup_github_auth!
       require 'base64'
       require 'time'
 
-      def generate_jwt(app_id, private_key_path)
-        private_key = OpenSSL::PKey::RSA.new(File.read(private_key_path))
+      PRIVATE_KEY_PATH = "#{private_key_path}"
+
+      def generate_jwt(app_id)
+        private_key = OpenSSL::PKey::RSA.new(File.read(PRIVATE_KEY_PATH))
         payload = {
           iat: Time.now.to_i - 60,
-          exp: Time.now.to_i + 600,
+          exp: Time.now.to_i + 480, # 8 minutes to handle clock skew
           iss: app_id
         }
         header = { alg: 'RS256', typ: 'JWT' }
@@ -259,17 +261,25 @@ def setup_github_auth!
         request = Net::HTTP::Post.new(uri)
         request['Authorization'] = "Bearer \#{jwt}"
         request['Accept'] = 'application/vnd.github+json'
+        
         response = http.request(request)
         data = JSON.parse(response.body)
+        
+        unless response.is_a?(Net::HTTPSuccess)
+          STDERR.puts "❌ Error getting installation token: \#{response.code} \#{response.message}"
+          STDERR.puts "   Response: \#{response.body}"
+          exit 1
+        end
+
         { token: data['token'], expires_at: Time.parse(data['expires_at']) }
       end
 
-      def find_or_create_cached_token(app_id, installation_id, key_path)
+      def find_or_create_cached_token(app_id, installation_id)
         cache_file = '/tmp/github-app-token-cache'
         cached_token = read_cached_token(cache_file)
         return cached_token if cached_token
 
-        jwt = generate_jwt(app_id, key_path)
+        jwt = generate_jwt(app_id)
         token_data = get_installation_token(jwt, installation_id)
         File.write(cache_file, token_data.to_json)
         token_data[:token]
@@ -286,9 +296,8 @@ def setup_github_auth!
 
       app_id = ENV['GITHUB_APP_CLIENT_ID'] || ENV['GITHUB_APP_ID']
       installation_id = ENV['GITHUB_APP_INSTALLATION_ID']
-      key_path = "#{private_key_path}"
 
-      puts find_or_create_cached_token(app_id, installation_id, key_path)
+      puts find_or_create_cached_token(app_id, installation_id)
     RUBY
 
     # Install helper via sudo to /usr/local/bin
