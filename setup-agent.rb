@@ -270,8 +270,8 @@ def setup_github_auth!
       def read_cached_token(cache_file)
         return nil unless File.exist?(cache_file)
         cache = JSON.parse(File.read(cache_file))
-        expires_at = Time.parse(cache['expires_at'])
-        return cache['token'] if expires_at > Time.now + 300
+        return if cache['token'].nil? || cache['expires_at'].nil?
+        return cache['token'] if Time.parse(cache['expires_at']) > Time.now + 300
         nil
       rescue
       end
