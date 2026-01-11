@@ -308,13 +308,29 @@ def attach_to_agent(agent_type, config)
   puts "📎 Attaching to #{agent_type} agent..."
   
   # Determine the user to attach as
-  # First try to detect the user the container is running as
-  user = `docker exec #{container_name} whoami 2>/dev/null`.strip
+  # Robust method: find the user running the agent process (tmux or bridge)
+  user = `docker exec #{container_name} ps aux | grep "[a]gent-bridge-tmux" | awk '{print $1}' | head -n 1`.strip
   
   if user.empty?
-    # Fallback: try to match host UID
-    uid = Process.uid
-    user = `docker exec #{container_name} getent passwd #{uid} | cut -d: -f1`.strip
+    user = `docker exec #{container_name} ps aux | grep "[t]mux new-session" | awk '{print $1}' | head -n 1`.strip
+  end
+
+  if user.empty?
+    # Fallback to previous heuristic
+    detected_user = `docker exec #{container_name} whoami 2>/dev/null`.strip
+    if detected_user == "root" || detected_user.empty?
+       uid = Process.uid
+       mapped_user = `docker exec #{container_name} getent passwd #{uid} | cut -d: -f1`.strip
+       user = mapped_user unless mapped_user.empty?
+    else
+       user = detected_user
+    end
+  end
+  
+  if user.empty?
+    # Final Fallback
+    user = "rails"
+    puts "⚠️  Could not detect agent user, defaulting to '#{user}'"
   end
   
   if user.empty?

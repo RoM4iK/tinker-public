@@ -2,11 +2,14 @@
 set -e
 
 # Install dependencies
+# Handle potential clock skew in containers
+echo 'Acquire::Check-Date "false";' > /etc/apt/apt.conf.d/99no-check-date
+
 apt-get update && apt-get install -y \
     git curl tmux sudo unzip wget
 
 # Install Node.js (required for Claude CLI)
-if ! command -v node &> /dev/null; then
+if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
   curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
   apt-get install -y nodejs
 fi
@@ -32,8 +35,12 @@ if getent group ${GROUP_ID} >/dev/null 2>&1; then
   GROUP_NAME=$(getent group ${GROUP_ID} | cut -d: -f1)
 else
   # Create group
-  groupadd -g ${GROUP_ID} ${AGENT_USER}
-  GROUP_NAME=${AGENT_USER}
+  if getent group ${AGENT_USER} >/dev/null 2>&1; then
+      GROUP_NAME=${AGENT_USER}
+  else
+      groupadd -g ${GROUP_ID} ${AGENT_USER}
+      GROUP_NAME=${AGENT_USER}
+  fi
 fi
 
 # 2. Handle User
