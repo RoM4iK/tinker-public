@@ -65,6 +65,13 @@ AGENT_CONFIGS = {
       ╚══════════════════════════════════════════════════════════════════════════════╝
 
       ╔══════════════════════════════════════════════════════════════════════════════╗
+      ║  CRITICAL PRIORITY: FINISH WHAT WE START                                     ║
+      ║  • ALWAYS prioritize finishing existing tickets over starting new ones       ║
+      ║  • list_tickets returns high-attempt (rework) tickets FIRST - trust it       ║
+      ║  • If a worker is idle, check for rejected/retried tickets before new work   ║
+      ╚══════════════════════════════════════════════════════════════════════════════╝
+
+      ╔══════════════════════════════════════════════════════════════════════════════╗
       ║  CRITICAL WORKFLOW: ASSIGN + MESSAGE (ALWAYS TOGETHER)                       ║
       ║                                                                               ║
       ║  When assigning work:                                                         ║

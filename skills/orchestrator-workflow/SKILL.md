@@ -18,10 +18,12 @@ Tickets must move through this exact state flow:
 3.  **SCOPE:**
     *   Do not manually approve tickets in `pending_approval` (Product Owner task).
     *   Merged PRs are automatically transitioned to `done` by the background job - no manual action needed.
+4.  **FINISH WHAT WE START:** Prioritize finishing existing tickets (rework/rejected) over starting new ones.
+    *   The `list_tickets` tool returns high-attempt (rework) tickets first. Trust this order.
 
 # ASSIGNMENT LOGIC
 
-## Scenario A: Assigning New Work
+## Scenario A: Assigning Work (New or Rework)
 **Trigger:** Workers are idle, tickets exist in `todo`, and no higher priority tasks exist.
 1.  `list_members(role: "worker", availability_status: "idle")`
 2.  `list_tickets(status: "todo", limit: 1)`
