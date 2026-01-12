@@ -10,9 +10,23 @@ apt-get update && apt-get install -y \
     git curl tmux sudo unzip wget
 
 # Install Node.js (required for Claude CLI)
-if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
-  curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-  apt-get install -y nodejs
+# Check for existing Node installation
+NODE_VERSION=""
+if command -v node &> /dev/null; then
+    NODE_VERSION=$(node -v | cut -d. -f1 | tr -d 'v')
+fi
+
+if [ -n "$NODE_VERSION" ] && [ "$NODE_VERSION" -ge 18 ]; then
+    echo "Node.js $NODE_VERSION is already installed."
+    # Check for npm
+    if ! command -v npm &> /dev/null; then
+        echo "npm is missing. Installing npm..."
+        apt-get install -y npm
+    fi
+else
+    echo "Node.js not found or too old ($NODE_VERSION). Installing Node.js 20..."
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    apt-get install -y nodejs
 fi
 
 # Install Claude CLI
