@@ -9,6 +9,8 @@ description: Use when creating or updating tickets. Covers ticket writing best p
 
 When creating or updating tickets (e.g., when planning backlog tickets):
 
+Use `create_ticket` mcp tool when you will have full understanding of problem.
+
 ❌ **DO NOT** add "Files to Create" or "Files to Modify" sections
 ❌ **DO NOT** specify exact file paths in tickets
 ✅ **DO** describe the desired outcome and what needs to work
@@ -68,6 +70,3 @@ Worker thinks: "What files do I need to touch to accomplish this?" → Explores 
 - Assumptions about which files will change
 - Technical solutions when only requirements are known
 
-## MANTRA
-
-"Describe the destination, not the path."
