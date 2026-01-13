@@ -5,7 +5,7 @@
 #
 # This script sets up and runs a Tinker agent. It:
 # 1. Generates MCP config from environment variables
-# 2. Creates CLAUDE.md with role-specific instructions
+# 2. Verifies system prompt (agent banner) exists at /etc/tinker/system-prompt.txt
 # 3. Downloads and runs agent-bridge
 #
 # Requirements (install in your container):
@@ -149,15 +149,11 @@ def setup_claude_config!
   end
 end
 
-def setup_claude_md!
-  agent_type = ENV["AGENT_TYPE"]
-  
-  if File.exist?("/tmp/agent-banner.txt")
-    banner = File.read("/tmp/agent-banner.txt")
-    File.write("CLAUDE.md", banner)
-    puts "📝 Created CLAUDE.md with instructions from /tmp/agent-banner.txt"
+def setup_system_prompt!
+  if File.exist?("/etc/tinker/system-prompt.txt")
+    puts "✅ System prompt available at /etc/tinker/system-prompt.txt"
   else
-    puts "❌ /tmp/agent-banner.txt not found! Cannot set up CLAUDE.md"
+    puts "❌ /etc/tinker/system-prompt.txt not found!"
     exit 1
   end
 end
@@ -437,7 +433,7 @@ puts ""
 check_env!
 setup_mcp_config!
 setup_claude_config!
-setup_claude_md!
+setup_system_prompt!
 setup_skills!
 setup_github_auth!
 setup_git_config!

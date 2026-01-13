@@ -182,7 +182,7 @@ def run_agent(agent_type, config)
     # Mount Claude config
     "-v", "#{ENV['HOME']}/.claude.json:/tmp/cfg/claude.json:ro",
     "-v", "#{ENV['HOME']}/.claude:/tmp/cfg/claude_dir:ro",
-    "-v", "#{banner_path}:/tmp/agent-banner.txt:ro",
+    "-v", "#{banner_path}:/etc/tinker/system-prompt.txt:ro",
     "-e", "TINKER_VERSION=main",
     "-e", "SKILLS=#{agent_def[:skills]&.join(',')}",
     "-e", "AGENT_TYPE=#{agent_type}",
