@@ -4,11 +4,13 @@
 set -e
 
 AGENT_TYPE="${AGENT_TYPE:-worker}"
+AGENT_ID="${AGENT_ID:-}"
 STATUS_FILE="/tmp/agent-bridge-status"
 
 # Check if we're already inside tmux
 if [ -n "$TMUX" ]; then
     export STATUS_FILE
+    export AGENT_ID
     exec agent-bridge
 fi
 
@@ -48,7 +50,7 @@ tmux set-option -t "$SESSION" remain-on-exit off
 tmux set-option -t "$SESSION" mouse on
 
 # Run agent-bridge in tmux session
-tmux send-keys -t "$SESSION" "export AGENT_TYPE='$AGENT_TYPE' && export INSIDE_TMUX=1 && agent-bridge" C-m
+tmux send-keys -t "$SESSION" "export AGENT_TYPE='$AGENT_TYPE' && export AGENT_ID='$AGENT_ID' && export INSIDE_TMUX=1 && agent-bridge" C-m
 
 # Attach or wait
 if [ -t 0 ]; then

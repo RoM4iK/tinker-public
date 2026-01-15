@@ -68,6 +68,53 @@ def check_env!
   end
 end
 
+def fetch_agent_id!
+  rails_api_url = ENV["RAILS_API_URL"]
+  rails_api_key = ENV["RAILS_API_KEY"]
+  
+  unless rails_api_url && !rails_api_url.empty? && rails_api_key && !rails_api_key.empty?
+    puts "❌ RAILS_API_URL or RAILS_API_KEY not set"
+    puts "   Agent ID is required for the bridge to connect"
+    exit 1
+  end
+
+  # Fetch agent ID from Rails API using api_key
+  uri = URI("#{rails_api_url}/whoami")
+  http = Net::HTTP.new(uri.host, uri.port)
+  http.use_ssl = uri.scheme == "https"
+  
+  request = Net::HTTP::Get.new(uri)
+  request["X-API-Key"] = rails_api_key
+  request["Accept"] = "application/json"
+  
+  begin
+    puts "🔍 Fetching agent ID from #{rails_api_url}/whoami..."
+    response = http.request(request)
+    
+    if response.is_a?(Net::HTTPSuccess)
+      data = JSON.parse(response.body)
+      agent_id = data["agent_id"] || data["id"]
+      
+      if agent_id && !agent_id.to_s.empty?
+        ENV["AGENT_ID"] = agent_id.to_s
+        puts "✅ Agent ID fetched: #{agent_id}"
+      else
+        puts "❌ Could not find agent_id in API response"
+        puts "   Response: #{response.body}"
+        exit 1
+      end
+    else
+      puts "❌ Failed to fetch agent ID: #{response.code} #{response.message}"
+      puts "   Response: #{response.body}"
+      exit 1
+    end
+  rescue => e
+    puts "❌ Error fetching agent ID: #{e.message}"
+    puts "   #{e.class}: #{e.backtrace.first}"
+    exit 1
+  end
+end
+
 def setup_mcp_config!
   # MCP config is project-specific and should be provided by the Dockerfile
   # or mounted at runtime. This script only checks if it exists.
@@ -421,8 +468,13 @@ def run_agent!(bin_dir)
   puts "   Press Ctrl+B then D to detach from tmux"
   puts ""
 
+  # Build environment variables to pass to agent-bridge-tmux
+  # We need to explicitly export AGENT_ID if it was fetched
+  env_vars = {}
+  env_vars["AGENT_ID"] = ENV["AGENT_ID"] if ENV["AGENT_ID"]
+  
   # Run agent-bridge-tmux which handles tmux session and status bar
-  exec("#{bin_dir}/agent-bridge-tmux")
+  exec(env_vars, "#{bin_dir}/agent-bridge-tmux")
 end
 
 # Main
@@ -431,6 +483,7 @@ puts "====================="
 puts ""
 
 check_env!
+fetch_agent_id!
 setup_mcp_config!
 setup_claude_config!
 setup_system_prompt!
