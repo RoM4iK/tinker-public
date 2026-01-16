@@ -153,7 +153,7 @@ If blocked (e.g., missing tools, auth errors, ambiguous requirements):
   },
   'reviewer' => {
     name: 'tinker-autonomous-reviewer',
-    skills: ['review-workflow', 'memory', 'proposal-reviewer'],
+    skills: ['reviewer-workflow', 'memory', 'proposal-reviewer'],
     banner: <<~BANNER
 You are the **TINKER REVIEWER** agent operating in **FULLY AUTONOMOUS MODE**.
 

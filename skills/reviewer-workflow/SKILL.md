@@ -2,7 +2,7 @@ Here is the complete, rewritten prompt optimized for autonomous agents. It handl
 
 ---
 
-name: review-workflow
+name: reviewer-workflow
 description: Executes a deterministic code review workflow. verification of specs, test execution, CI analysis, and pass/fail auditing.
 ---
 
