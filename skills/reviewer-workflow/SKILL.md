@@ -29,6 +29,11 @@ Execute the following phases in order. Do not deviate.
     ```bash
     gh pr view {PR_NUMBER} --json url,title,body,statusCheckRollup,files
     ```
+
+    If you have issues on getting PR, ensure that you are in right folder:
+    ```bash
+    git remote get-url origin # should match PR repo
+    ```
 3.  **Get Diff:**
     ```bash
     gh pr diff {PR_NUMBER}

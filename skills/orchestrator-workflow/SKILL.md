@@ -27,24 +27,25 @@ Tickets must move through this exact state flow:
 **Trigger:** Workers are idle, tickets exist in `todo`, and no higher priority tasks exist.
 1.  `list_members(role: "worker", availability_status: "idle")`
 2.  `list_tickets(status: "todo", limit: 1)`
-3.  
-    `transition_ticket(ticket_id: X, event: "start_work")`
-    If you are assigning different ticket than worker previously worked (only last one):  
-        `refresh_worker_context(agent_id: Y, reason: "Starting work on new ticket #x")`
-4.  `send_message_to_agent(agent_id: Y, message: "Use worker-workflow skill and work on ticket #X")`
-
+3.  `transition_ticket(ticket_id: X, event: "start_work")`
+4.  
+    - `refresh_worker_context(agent_id: Y, reason: "Starting work on new ticket #x")`
+    - `send_message_to_agent(agent_id: Y, message: "Use worker-workflow skill and work on ticket #X")`
 ## Scenario B: Proposal Review
 **Trigger:** Reviewer is `idle`.
 1.  Check proposals via `list_proposals(status: "pending")`.
 2.  If we have any proposals with type: "auautonomous_task" or "test_gap"
     - `list_members(role: "reviewer", availability_status: "idle")`
+    - `refresh_worker_context(agent_id: Y, reason: "Starting proposal review")`
     - `send_message_to_agent(agent_id: Y, message: "Use proposal-reviewer skill. Please review pending autonomous proposals.")`
 
 ## Scenario C: Assigning Reviews
 **Trigger:** Reviewers are idle AND tickets exist in `pending_audit`.
 1.  `list_members(role: "reviewer", availability_status: "idle")`
 2.  `list_tickets(status: "pending_audit", limit: 1)`
-3.  `send_message_to_agent(agent_id: Y, message: "Use /reviewer-workflow skill and review #X")`
+3.  
+    - `refresh_worker_context(agent_id: Y, reason: "Start reviewing ticket #X")`
+    - `send_message_to_agent(agent_id: Y, message: "Use /reviewer-workflow skill and review #X")`
 
 ## Scenario D: Check for hanging items
 **Trigger:** Worker is in idle state, but tickets in `in_progress` status exist.
