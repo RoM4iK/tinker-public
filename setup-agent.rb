@@ -397,6 +397,45 @@ def setup_git_config!
   puts "✅ Git configured to force HTTPS for GitHub"
 end
 
+def setup_git_hooks!
+  # Install git hooks to encourage agents to use git-workflow skill
+  hooks_dest = File.join(Dir.pwd, ".git", "hooks")
+  return unless File.directory?(hooks_dest)
+
+  puts "🪝 Installing git hooks..."
+
+  # Try local copy first, then download from GitHub
+  local_paths = [
+    File.join(Dir.pwd, "tinker-public", "hooks", "pre-commit"),
+    File.join(Dir.pwd, "hooks", "pre-commit"),
+    "/tmp/hooks/pre-commit"
+  ]
+
+  hook_content = nil
+  local_paths.each do |path|
+    if File.exist?(path)
+      hook_content = File.read(path)
+      puts "   (from local: #{path})"
+      break
+    end
+  end
+
+  unless hook_content
+    url = "#{TINKER_RAW_URL}/hooks/pre-commit"
+    begin
+      hook_content = URI.open(url).read
+    rescue OpenURI::HTTPError => e
+      puts "⚠️  Failed to download pre-commit hook: #{e.message}"
+      return
+    end
+  end
+
+  hook_path = File.join(hooks_dest, "pre-commit")
+  File.write(hook_path, hook_content)
+  File.chmod(0755, hook_path)
+  puts "✅ Git hooks installed"
+end
+
 def download_agent_bridge!
   # Detect architecture
   arch = `uname -m`.strip
@@ -490,5 +529,6 @@ setup_system_prompt!
 setup_skills!
 setup_github_auth!
 setup_git_config!
+setup_git_hooks!
 bin_dir = download_agent_bridge!
 run_agent!(bin_dir)

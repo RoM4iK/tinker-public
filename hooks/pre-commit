@@ -1,0 +1,38 @@
+#!/bin/bash
+#
+# Pre-commit hook to remind agents to use the git-workflow skill
+# instead of raw git commit commands.
+#
+# This hook only activates when AGENT_TYPE environment variable is set,
+# ensuring human commits are unaffected.
+#
+
+# Check if running in agent environment
+if [ -z "$AGENT_TYPE" ]; then
+    exit 0  # Not an agent, allow commit
+fi
+
+# Check for bypass flag
+if [ "$AGENT_BYPASS_COMMIT_CHECK" = "true" ]; then
+    exit 0  # Bypass enabled
+fi
+
+# Agent detected - block commit and show message
+echo ""
+echo "⚠️  AGENT DETECTED"
+echo ""
+echo "Please use the git-workflow skill to commit changes:"
+echo "  • Use the /git-workflow command"
+echo "  • Or invoke the git-workflow skill directly"
+echo ""
+echo "The git-workflow skill ensures proper commit formatting with:"
+echo "  • Parallel git status and git diff"
+echo "  • HEREDOC commit messages"
+echo "  • Co-author attribution"
+echo "  • Post-commit verification"
+echo ""
+echo "To bypass this check, use:"
+echo "  AGENT_BYPASS_COMMIT_CHECK=true git commit -m 'message'"
+echo ""
+
+exit 1  # Block the commit
