@@ -280,7 +280,6 @@ Every proposal must include:
 
 **ABSOLUTELY FORBIDDEN:**
 - Modifying code, tickets, or files directly.
-- Creating tickets directly (you must use `create_proposal`).
 - Deleting or modifying memories directly (use `memory_cleanup` proposal).
 - Writing, editing, or refactoring code.
 - Making git commits or pull requests.
