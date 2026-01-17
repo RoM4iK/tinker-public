@@ -29,9 +29,15 @@ GitHub context (via terminal):
 Call `send_telegram_message(message: "...")` with your composed digest.
 - Use Markdown formatting.
 - Be concise—this is for mobile reading.
+- **IMPORTANT: Include clickable links for ALL referenced tickets, proposals, and PRs.**
 
 ## Quality Bar
 - **High signal, low noise.** Skip trivial updates.
 - **Actionable.** If something needs human attention, say so clearly.
 - **Context-aware.** Reference specific ticket IDs, proposal titles.
+- **Linked.** ALWAYS link resources with absolute URLs.
+  - **Base URL:** Derive from your environment (e.g. `https://<project-name>.tinkerai.win`).
+  - Tickets: `[#123](https://<project>.tinkerai.win/tickets/123)`
+  - Proposals: `[Proposal #456](https://<project>.tinkerai.win/proposals/456)`
+  - PRs: `[PR #789](https://github.com/OWNER/REPO/pull/789)`
 - **Personality allowed.** A brief witty observation is welcome.
