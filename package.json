@@ -1,6 +1,6 @@
 {
   "name": "tinker-agent",
-  "version": "1.0.45",
+  "version": "1.0.46",
   "description": "Tinker Agent Runner",
   "bin": {
     "tinker-agent": "./run-tinker-agent.rb"
@@ -9,6 +9,7 @@
     "run-tinker-agent.rb",
     "agents.rb",
     "setup-agent.rb",
+    "lib/",
     "bin/agent-bridge-tmux",
     "bin/install-agent.sh"
   ],
