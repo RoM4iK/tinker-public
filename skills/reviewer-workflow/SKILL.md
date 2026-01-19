@@ -155,14 +155,8 @@ Code meets quality standards.
     gh pr comment {PR_URL} --body "{GENERATED_COMMENT}"
     ```
 
-#### Step 5.3: Label & Transition
-1.  **Apply Label:**
-    ```bash
-    gh label create "tinker-reviewed" --color "0E8A16" --description "PR reviewed by Tinker" 2>/dev/null || true
-    gh pr edit {PR_NUMBER} --add-label "tinker-reviewed"
-    ```
-
-2.  **Transition Ticket:**
+#### Step 5.3: Transition
+1.  **Transition Ticket:**
     *   If **PASS**:
         ```bash
         update_ticket(ticket_id: X, working_memory: { "reviewer_confidence" => 100 })

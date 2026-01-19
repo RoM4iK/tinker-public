@@ -29,20 +29,18 @@ else
     apt-get install -y nodejs
 fi
 
-# Install Claude CLI
-npm install -g @anthropic-ai/claude-code
-
-# Install GitHub CLI
-curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list
-apt-get update && apt-get install gh -y
-
-# Setup User
+# Setup User FIRST (before installing Claude)
 # We want to run as the same UID as the host user (passed via build arg)
 # to ensure we can edit mounted files.
 USER_ID=${USER_ID:-1000}
 GROUP_ID=${GROUP_ID:-1000}
 AGENT_USER="claude"
+
+# Allow UIDs outside the default range (e.g., macOS UIDs like 501)
+if [ "$USER_ID" -lt 1000 ]; then
+  sed -i 's/^UID_MIN.*/UID_MIN 100/' /etc/login.defs
+  sed -i 's/^GID_MIN.*/GID_MIN 100/' /etc/login.defs
+fi
 
 # 1. Handle Group
 if getent group ${GROUP_ID} >/dev/null 2>&1; then
@@ -75,6 +73,21 @@ echo "${AGENT_USER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 # 4. Determine Home Directory
 AGENT_HOME=$(getent passwd ${AGENT_USER} | cut -d: -f6)
 
+echo "Installing claude-code as ${AGENT_USER}"
+
+# Install Claude CLI as the agent user
+sudo -u ${AGENT_USER} bash -c 'curl -fsSL https://claude.ai/install.sh | bash'
+
+# Add agent user's local bin to system PATH
+echo "export PATH=\"${AGENT_HOME}/.local/bin:\$PATH\"" >> /etc/profile.d/claude.sh
+chmod +x /etc/profile.d/claude.sh
+
+echo "Installing Github CLI"
+# Install GitHub CLI
+curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list
+apt-get update && apt-get install gh -y
+
 # Create entrypoint
 cat << EOF > /entrypoint.sh
 #!/bin/bash
@@ -93,12 +106,13 @@ if [ -f "/tmp/github-app-privkey.pem" ]; then
   chmod 600 ${AGENT_HOME}/.github-app-privkey.pem 2>/dev/null || true
 fi
 
-# Fix permissions
+# Fix permissions of home directory
 sudo chown -R ${AGENT_USER}:${GROUP_NAME} ${AGENT_HOME} || echo "⚠️ Failed to chown home"
 
-# Fix permissions of the current directory (project root)
-# This ensures the agent can write CLAUDE.md and .mcp.json
-sudo chown ${AGENT_USER}:${GROUP_NAME} $(pwd) || echo "⚠️ Failed to chown project root"
+# Fix permissions of the current directory (project root) and key subdirectories
+# This ensures the agent can write CLAUDE.md, .mcp.json, and create/modify files
+WORKDIR=\$(pwd)
+sudo chown -R ${AGENT_USER}:${GROUP_NAME} "\${WORKDIR}" || echo "⚠️ Failed to chown workdir"
 
 # Execute command as agent user
 exec sudo -E -u ${AGENT_USER} env "HOME=${AGENT_HOME}" "\$@"
