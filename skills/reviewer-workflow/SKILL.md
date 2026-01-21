@@ -1,7 +1,4 @@
-Here is the complete, rewritten prompt optimized for autonomous agents. It handles the edge case where CI is not configured by treating local test results as the primary source of truth in that scenario.
-
 ---
-
 name: reviewer-workflow
 description: Executes a deterministic code review workflow. verification of specs, test execution, CI analysis, and pass/fail auditing.
 ---
