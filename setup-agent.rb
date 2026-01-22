@@ -219,9 +219,7 @@ def setup_skills!
     # Try local copy first (dev mode, or if copied into image)
     # Check both PWD/tinker-public/skills or PWD/skills (depending on how image was built)
     local_paths = [
-      File.join(Dir.pwd, "tinker-public", "skills", skill, "SKILL.md"),
-      File.join(Dir.pwd, "skills", skill, "SKILL.md"),
-      "/tmp/skills/#{skill}/SKILL.md" # For legacy mounts
+      File.join(Dir.pwd, "tinker-public", "skills", skill, "SKILL.md")
     ]
     
     skill_content = nil
@@ -395,6 +393,45 @@ def setup_git_config!
   # This fixes "Permission denied (publickey)" when the repo uses git@github.com remote
   system("git config --global url.\"https://github.com/\".insteadOf \"git@github.com:\"")
   puts "✅ Git configured to force HTTPS for GitHub"
+
+  # Avoid "dubious ownership" errors in containers
+  system("git config --global --add safe.directory \"#{Dir.pwd}\"")
+  puts "✅ Git configured to trust #{Dir.pwd}"
+end
+
+def prepare_git_state!
+  return unless File.directory?(".git")
+
+  puts "🧹 Preparing git repository..."
+
+  # Fix permissions on .git to allow lock creation (fix for Permission denied)
+  if system("command -v sudo > /dev/null 2>&1")
+    current_user = `whoami`.strip
+    if current_user != "root"
+      # Try to take ownership of .git folder to ensure we can write locks
+      system("sudo chown -R #{current_user} .git")
+    end
+  end
+
+  # Remove stale index.lock if it exists
+  if File.exist?(".git/index.lock")
+    puts "🔓 Removing stale index.lock..."
+    first_try = system("rm -f .git/index.lock")
+    
+    # If failed and sudo exists, try sudo
+    if File.exist?(".git/index.lock") && system("command -v sudo > /dev/null 2>&1")
+      system("sudo rm -f .git/index.lock")
+    end
+  end
+
+  # Reset to clean state
+  puts "🔄 Resetting to clean state..."
+  system("git add .")
+  if system("git reset --hard")
+    puts "✅ Git state reset"
+  else
+    puts "⚠️  Failed to reset git state"
+  end
 end
 
 def setup_git_hooks!
@@ -529,6 +566,7 @@ setup_system_prompt!
 setup_skills!
 setup_github_auth!
 setup_git_config!
+prepare_git_state!
 setup_git_hooks!
 bin_dir = download_agent_bridge!
 run_agent!(bin_dir)
