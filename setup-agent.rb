@@ -399,45 +399,6 @@ def setup_git_config!
   puts "✅ Git configured to trust #{Dir.pwd}"
 end
 
-def prepare_git_state!
-  return unless File.directory?(".git")
-
-  puts "🧹 Preparing git repository..."
-
-  # Fix permissions on .git to allow lock creation (fix for Permission denied)
-  if system("command -v sudo > /dev/null 2>&1")
-    current_user = `whoami`.strip
-    if current_user != "root"
-      # Try to take ownership of .git folder to ensure we can write locks
-      system("sudo chown -R #{current_user} .git")
-    end
-  end
-
-  # Remove stale index.lock if it exists
-  if File.exist?(".git/index.lock")
-    puts "🔓 Removing stale index.lock..."
-    first_try = system("rm -f .git/index.lock")
-    
-    # If failed and sudo exists, try sudo
-    if File.exist?(".git/index.lock") && system("command -v sudo > /dev/null 2>&1")
-      system("sudo rm -f .git/index.lock")
-    end
-  end
-
-  # Reset to clean state
-  puts "🔄 Resetting to clean state..."
-  system("git add .")
-  if system("git reset --hard")
-    puts "✅ Git state reset"
-  else
-    puts "⚠️  Failed to reset git state"
-  end
-  if system("git pull --rebase")
-    puts "✅ Git repository up to date"
-  else
-    puts "⚠️  Failed to pull latest changes"
-  end
-end
 
 def setup_git_hooks!
   # Install git hooks to encourage agents to use git-workflow skill
@@ -571,7 +532,7 @@ setup_system_prompt!
 setup_skills!
 setup_github_auth!
 setup_git_config!
-prepare_git_state!
 setup_git_hooks!
+# prepare_git_state! is now in entrypoint.sh
 bin_dir = download_agent_bridge!
 run_agent!(bin_dir)

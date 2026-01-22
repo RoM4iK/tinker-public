@@ -114,6 +114,20 @@ sudo chown -R ${AGENT_USER}:${GROUP_NAME} ${AGENT_HOME} || echo "⚠️ Failed t
 WORKDIR=\$(pwd)
 sudo chown -R ${AGENT_USER}:${GROUP_NAME} "\${WORKDIR}" || echo "⚠️ Failed to chown workdir"
 
+# Reset git state if .git exists
+if [ -d ".git" ]; then
+  echo "🧹 Resetting git state..."
+  
+  # Remove stale index.lock
+  rm -f .git/index.lock
+  
+  # Reset hard to HEAD
+  git reset --hard HEAD || echo "⚠️ Failed to git reset"
+  
+  # Ensure clean state (optional cleans ignored files too?)
+  # git clean -fd || echo "⚠️ Failed to git clean"
+fi
+
 # Execute command as agent user
 exec sudo -E -u ${AGENT_USER} env "HOME=${AGENT_HOME}" "\$@"
 EOF
