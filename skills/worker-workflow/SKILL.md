@@ -47,11 +47,11 @@ You receive assigned tickets and implement them. When uncertain, escalate rather
 
 ### Work Cycle
 
-1. **Receive ticket** → Check git branch → `mark_busy()`
+1. **Receive ticket** → Check git branch (ticket should already be assigned)
 2. **Implement** → Use **git-workflow** skill (detailed below)
 3. **Create PR** → Update ticket with PR URL
-4. **Submit for review** → `submit_for_review(ticket_id)`
-5. **Mark available** → `mark_idle()`
+4. **Submit for review** → `transition_ticket(event: "submit_review")`
+   *(System automatically marks you as idle)*
 
 ## What YOU Do (Your Actions)
 
@@ -72,8 +72,6 @@ Follow instructions in `git-workflow` skill.
 
 ### Coordination Tasks
 - ✅ Check git branch BEFORE starting new ticket
-- ✅ Mark busy when starting work
-- ✅ Mark idle when submitting PR
 - ✅ Update tickets with PR URLs
 - ✅ Add comments for blockers/questions
 - ✅ Store decisions in memory for reference
@@ -108,6 +106,9 @@ if existing_pr_url
   git checkout <branch_name>
   git pull origin <branch_name>
 
+  # Rebase on main to get latest fixes (e.g. spec fixes from other branches)
+  git pull --rebase origin main
+
   # Make your fixes, commit, push to SAME branch
   # NO new PR needed - existing PR will be updated
 else
@@ -121,7 +122,6 @@ else
   git checkout -b feature/<id>-description
 end
 
-mark_busy()
 # Read ticket details, understand requirements
 # Follow git-workflow for commits
 ```
@@ -143,6 +143,9 @@ branch_name = gh pr view #{pr_number} --json headRefName --jq '.headRefName'
 git checkout #{branch_name}
 git pull origin #{branch_name}
 
+# Rebase on main to get latest fixes
+git pull --rebase origin main
+
 # Make your fixes...
 git add <files>
 git commit -m "fix(scope): address reviewer feedback"
@@ -163,7 +166,7 @@ update_ticket(
   working_memory: { "worker_confidence" => 75 }  # Your confidence in the implementation
 )
 
-submit_for_review(ticket_id: X)  # New tool that handles submit + mark idle
+transition_ticket(ticket_id: X, event: "submit_review")  # Automatically marks you as idle
 ```
 
 #### Setting Worker Confidence
@@ -213,9 +216,9 @@ store_memory(content: "Chose X approach because...", memory_type: "decision", ti
 ## Quick Reference
 
 ```
-Check ticket for existing PR → mark_busy()
-  ├─ PR exists? → Checkout PR branch → Fix → Push → submit_for_review()
-  └─ No PR? → Create new branch → Implement → Create PR → submit_for_review()
+Check ticket for existing PR
+  ├─ PR exists? → Checkout PR branch → Fix → Push → transition_ticket(submit_review)
+  └─ No PR? → Create new branch → Implement → Create PR → transition_ticket(submit_review)
 ```
 
 ## Success Indicators
