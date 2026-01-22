@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require 'fileutils'
 
 module TinkerAgent
   module Agent
@@ -20,6 +21,7 @@ module TinkerAgent
 
       # Write banner to a persistent temp file (not auto-deleted)
       banner_path = "/tmp/tinker-agent-banner-#{agent_type}.txt"
+      FileUtils.rm_rf(banner_path)
       File.write(banner_path, agent_def[:banner])
 
       docker_cmd = build_docker_command(container_name, agent_type, config, agent_config, agent_def, banner_path)
