@@ -16,7 +16,7 @@
 #   - claude CLI: npm install -g @anthropic-ai/claude-code
 #
 # Environment variables:
-#   AGENT_TYPE        - worker|planner|reviewer|orchestrator|researcher
+#   AGENT_TYPE        - worker|planner|reviewer|researcher
 #   PROJECT_ID        - Your Tinker project ID
 #   RAILS_WS_URL      - WebSocket URL (wss://tinker.example.com/cable)
 #   RAILS_API_URL     - API URL (https://tinker.example.com/api/v1)
@@ -39,7 +39,7 @@ TINKER_VERSION = ENV["TINKER_VERSION"] || "main"
 TINKER_RAW_URL = "https://raw.githubusercontent.com/RoM4iK/tinker-public/#{TINKER_VERSION}"
 
 # Valid agent types
-VALID_AGENT_TYPES = %w[planner worker reviewer orchestrator researcher]
+VALID_AGENT_TYPES = %w[planner worker reviewer researcher]
 
 def check_env!
   required = %w[AGENT_TYPE PROJECT_ID RAILS_WS_URL]
@@ -49,7 +49,7 @@ def check_env!
     puts "❌ Missing environment variables: #{missing.join(', ')}"
     puts ""
     puts "Required:"
-    puts "  AGENT_TYPE     - worker|planner|reviewer|orchestrator|researcher"
+    puts "  AGENT_TYPE     - worker|planner|reviewer|researcher"
     puts "  PROJECT_ID     - Your Tinker project ID"
     puts "  RAILS_WS_URL   - WebSocket URL (wss://tinker.example.com/cable)"
     puts ""

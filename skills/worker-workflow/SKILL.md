@@ -79,10 +79,10 @@ Follow instructions in `git-workflow` skill.
 ### Escalation (When Uncertain)
 | Situation | Action |
 |-----------|--------|
-| Need a task created | Add comment: "Orchestrator: please create ticket for..." |
-| Need architectural decision | Add comment: "Orchestrator: decision needed on..." |
-| Found dependency issue | Add comment: "Orchestrator: ticket #X blocks #Y" |
-| Unclear requirement | Add comment: "Planner: clarification needed on..." |
+| Need a task created | Add comment: "Please create ticket for..." |
+| Need architectural decision | Add comment: "Decision needed on..." |
+| Found dependency issue | Add comment: "Ticket #X blocks #Y" |
+| Unclear requirement | Add comment: "Clarification needed on..." |
 
 ## HOW TO Handle Common Scenarios
 

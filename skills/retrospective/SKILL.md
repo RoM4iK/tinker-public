@@ -305,7 +305,7 @@ Implemented a complete ticket archival system to hide completed work from main v
 ## How We Fixed It
 
 ### Fix 1: Added MCP Permissions
-- **Solution:** Added all 4 archive tools to `config/tinker/mcp_permissions.yml` for orchestrator and reviewer roles
+- **Solution:** Added all 4 archive tools to `config/tinker/mcp_permissions.yml` for reviewer and planner roles
 - **Implementation:** Direct YAML edit to permissions file
 - **Follow-up:** None - fixed in same PR
 

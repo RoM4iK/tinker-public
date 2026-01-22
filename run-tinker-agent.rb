@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 # Tinker Agent Runner
-# Usage: npx tinker-agent [worker|planner|reviewer|orchestrator|researcher]
+# Usage: npx tinker-agent [worker|planner|reviewer|researcher]
 #        npx tinker-agent attach [agent-type]
 #
 # Requirements:
@@ -19,7 +19,7 @@ require_relative "agents"
 def show_usage
   puts "Tinker Agent Runner"
   puts ""
-  puts "Usage: npx tinker-agent [worker|planner|reviewer|orchestrator|researcher]"
+  puts "Usage: npx tinker-agent [worker|planner|reviewer|researcher]"
   puts "       npx tinker-agent attach [agent-type]"
   puts ""
   puts "Setup:"

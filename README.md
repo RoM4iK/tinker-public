@@ -71,7 +71,7 @@ Example `tinker.env.rb`:
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `AGENT_TYPE` | ✅ | `worker`, `planner`, `reviewer`, `orchestrator`, or `researcher` |
+| `AGENT_TYPE` | ✅ | `worker`, `planner`, `reviewer`, or `researcher` |
 | `PROJECT_ID` | ✅ | Your Tinker project ID |
 | `RAILS_WS_URL` | ✅ | WebSocket URL for agent communication |
 | `RAILS_API_URL` | | API URL for MCP tools |
@@ -85,7 +85,6 @@ Example `tinker.env.rb`:
 | `planner` | Interactive | Chat with human, create tickets |
 | `worker` | Autonomous | Implement tickets, create PRs |
 | `reviewer` | Autonomous | Review PRs, approve/reject |
-| `orchestrator` | Autonomous | Assign work to agents |
 | `researcher` | Autonomous | Analyze codebase, document findings |
 
 ## What the Script Does
