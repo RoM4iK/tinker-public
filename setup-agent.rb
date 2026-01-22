@@ -432,6 +432,11 @@ def prepare_git_state!
   else
     puts "⚠️  Failed to reset git state"
   end
+  if system("git pull --rebase")
+    puts "✅ Git repository up to date"
+  else
+    puts "⚠️  Failed to pull latest changes"
+  end
 end
 
 def setup_git_hooks!
