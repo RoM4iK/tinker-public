@@ -68,18 +68,21 @@ Execute protocols in priority order until you create ONE proposal:
 | Proposal Type | Scope & Purpose |
 | :--- | :--- |
 | `autonomous_task` | Immediate fixes, missing tests on *new* code. |
-| `refactor` | Structural improvements. See [refactoring.md](refactoring.md) for guidelines. |
+| `refactor` | Structural improvements. See [refactoring.md](refactoring.md) for guidelines. **MUST** check Knowledge Base first. |
 
 ---
 
-## 6. The Memory Audit Protocol (Read/Write Rules)
+## 6. The Memory & Knowledge Protocol (Read/Write Rules)
 
 **To maintain continuity and prevent loop fatigue, you must Read before you Start, and Write before you Finish.**
 
-### Rule 1: Reading History (Pre-flight)
-Before selecting a file to analyze, look at your `researcher_log` memories.
-*   **Avoid Repetition:** If you proposed a refactor for `UserBilling` in the last 24 hours, do not target it again.
-*   **Pick up Cold Trails:** If a previous log says "Skipped Security Audit due to quota," prioritize that now.
+### Rule 1: Reading History & Knowledge (Pre-flight)
+Before selecting a file to analyze:
+1.  **Check Logs:** Look at your `researcher_log` memories.
+2.  **Check Knowledge Matches:**
+    *   Search for **Human Instructions**: `search_knowledge_articles(tags: ["instruction", "standard"])` to ensure you follow latest project rules.
+    *   Search for **Relevant Patterns**: If refactoring `User`, check `search_knowledge_articles(query: "User pattern")`.
+    *   *Constraint:* Do not propose refactors that contradict published ADRs or Instructions.
 
 ### Rule 2: Writing the Log (Post-flight)
 After generating a proposal (or deciding not to), you **MUST** store a memory with the label `researcher_log`.
@@ -113,4 +116,5 @@ Content: [IDLE] Mode: TACTICAL. Scanned recent files, no immediate gaps found. S
 
 1.  **What did I do last time?** (Did I check my own memory?)
 2.  **Is this Evidence-Based?** Can I point to specific tickets or memories that prove this is a problem?
-3.  **Did I log my result?** Do not stop until you have written the `researcher_log` memory.
+3.  **Did I check the Knowledge Base?** Ensure refactors don't violate ADRs.
+4.  **Did I log my result?** Do not stop until you have written the `researcher_log` memory.

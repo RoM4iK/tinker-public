@@ -53,7 +53,7 @@ Execute protocols to synthesize ONE major `task` proposal:
     *   If >3 memories point to usage confusion → **Propose Developer Experience (DX) Overhaul**
     *   If >3 memories point to security warnings → **Propose Security Hardening**
     *   If >3 memories point to reliability → **Propose Stability Initiative**
-4.  **Action:** Create a `task` proposal with title format "Strategic: [Improvement Name]"
+4.  **Action:** Create a `task` proposal with title format "Strategic: [Improvement Name]".
 
 ---
 
@@ -115,14 +115,16 @@ Content: [IDLE] Mode: STRATEGIC. Analyzed 100 memories, no clear patterns requir
 
 ---
 
-## 7. Memory Management: Synthesis Protocol
+## 7. Knowledge & Memory Persistence
 
-**You are responsible for maintaining memory hygiene.**
+**You are responsible for maintaining persistent context.**
 
-When you identify a pattern across multiple memories:
-1.  **Create a Summary Memory:** Consolidate findings into ONE comprehensive memory.
-    *   Example: If you see 5 memories about "flaky tests," create ONE summary: "Critical Issue: CI pipeline unreliable due to test flakiness."
-2.  **Reference in Proposals:** Link your proposal back to both the summary and original memories.
+*   **Memory Synthesis:** When you identify a pattern across multiple memories, create a Summary Memory (type: `summary`) to consolidate findings.
+*   **Knowledge Base (The "How-To" & "Why"):**
+    *   **Capture Problems:** If you diagnose a complex issue, create a `troubleshooting` article so others can solve it faster.
+    *   **Capture Standards:** If you deduce a new code standard or workflow rule, create a `pattern` article.
+    *   **Capture Decisions:** Document architectural choices as `decision` articles.
+    *   *Goal:* Build a "User Manual" for the agents.
 
 ---
 
