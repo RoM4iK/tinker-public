@@ -10,6 +10,7 @@ Run Tinker agents in any Docker container with Ruby.
 ```dockerfile
 # --- TINKER AGENT SETUP ---
 ARG TINKER_VERSION=main
+ADD "https://api.github.com/repos/RoM4iK/tinker-public/commits?sha=${TINKER_VERSION}&path=bin/install-agent.sh&per_page=1" /tmp/tinker_version.json
 RUN curl -fsSL https://raw.githubusercontent.com/RoM4iK/tinker-public/${TINKER_VERSION}/bin/install-agent.sh | bash
 
 ENTRYPOINT ["/entrypoint.sh"]
