@@ -63,7 +63,6 @@ Example `tinker.env.rb`:
     PORT=3200
     DB_HOST=localhost
     SECRET_KEY_BASE=very_secret
-    OPENAI_API_KEY=sk-...
   ENV
 }
 ```

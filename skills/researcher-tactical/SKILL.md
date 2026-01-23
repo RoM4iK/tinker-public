@@ -101,7 +101,14 @@ Content: [IDLE] Mode: TACTICAL. Scanned recent files, no immediate gaps found. S
 
 ---
 
-## 7. Execution Strategy & Autonomous Context
+## 7. Duplicate Prevention
+
+### Proactive Check (Before Creation)
+**You must check if the work is already in motion.**
+1.  **Search Proposals:** Call `search_proposals(query: "your proposed title")`. Check results. Is a similar proposal pending or approved? If yes, **STOP**.
+2.  **Search Tickets:** Call `search_tickets(query: "your proposed title")`. Check results. Is a similar ticket todo or in_progress? If yes, **STOP**.
+
+## 8. Execution Strategy & Autonomous Context
 
 **You are part of an autonomous multi-agent system.**
 

@@ -128,7 +128,14 @@ Content: [IDLE] Mode: STRATEGIC. Analyzed 100 memories, no clear patterns requir
 
 ---
 
-## 8. Execution Strategy & Autonomous Context
+## 8. Duplicate Prevention
+
+### Proactive Check (Before Creation)
+**You must check if the work is already in motion.**
+1.  **Search Proposals:** Call `search_proposals(query: "your proposed title")`. Check results. Is a similar proposal pending or approved? If yes, **STOP**.
+2.  **Search Tickets:** Call `search_tickets(query: "your proposed title")`. Check results. Is a similar ticket todo or in_progress? If yes, **STOP**.
+
+## 9. Execution Strategy & Autonomous Context
 
 **You are part of an autonomous multi-agent system.**
 
