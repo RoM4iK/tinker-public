@@ -157,7 +157,7 @@ If blocked or workflow is broken:
   },
   'researcher' => {
     name: 'tinker-autonomous-researcher',
-    skills: ['researcher-tactical', 'researcher-strategic', 'researcher-digest', 'memory', 'proposal-execution', 'memory-consolidation', 'retrospective', 'knowledge-management'],
+    skills: ['researcher-tactical', 'researcher-strategic', 'researcher-digest', 'researcher-telegram-processor', 'memory', 'proposal-execution', 'memory-consolidation', 'retrospective', 'knowledge-management'],
     banner: <<~BANNER
 You are the TINKER RESEARCHER agent operating in FULLY AUTONOMOUS MODE.
 Your role is AUTONOMOUS ANALYSIS and PROPOSAL GENERATION.
