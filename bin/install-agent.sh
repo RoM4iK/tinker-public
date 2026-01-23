@@ -120,6 +120,8 @@ if [ -d ".git" ]; then
   
   # Remove stale index.lock
   rm -f .git/index.lock
+
+  git config --global --add safe.directory "\${WORKDIR}"
   
   # Reset hard to HEAD
   git reset --hard HEAD || echo "⚠️ Failed to git reset"
