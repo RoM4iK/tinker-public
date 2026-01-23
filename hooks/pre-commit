@@ -1,7 +1,8 @@
 #!/bin/bash
 #
-# Pre-commit hook to remind agents to use the git-workflow skill
-# instead of raw git commit commands.
+# Pre-commit hook to:
+# 1. Remind agents to use the git-workflow skill (blocks commit)
+# 2. Remind agents to create PRs for skill modifications (nudge only)
 #
 # This hook only activates when AGENT_TYPE environment variable is set,
 # ensuring human commits are unaffected.
@@ -16,6 +17,44 @@ fi
 if [ "$AGENT_BYPASS_COMMIT_CHECK" = "true" ]; then
     exit 0  # Bypass enabled
 fi
+
+# Check for skill file modifications (nuge only, doesn't block)
+check_skill_modifications() {
+    # Get list of changed files in this commit
+    changed_files=$(git diff --cached --name-only --diff-filter=ACM)
+
+    # Check if any skill file modified
+    if echo "$changed_files" | grep -q "^tinker-public/skills/.*\.md$"; then
+        # Get current branch name
+        current_branch=$(git branch --show-current)
+
+        # Check if PR exists for this branch
+        if gh pr list --head "$current_branch" --json id 2>/dev/null | grep -q '"id"'; then
+            # PR exists, no reminder needed
+            return 0
+        fi
+
+        # No PR found - show reminder
+        echo ""
+        echo "⚠️  SKILL FILES MODIFIED"
+        echo ""
+        echo "You've modified skill files but don't have an open PR for this branch."
+        echo ""
+        echo "Skill changes require a pull request to the tinker-public repository."
+        echo "Without a PR, your changes will remain stuck in this local branch."
+        echo ""
+        echo "To create a PR:"
+        echo "  gh pr create --title 'Update skills: <description>' \\"
+        echo "                  --body 'Updates skill files for...'"
+        echo ""
+        echo "See Knowledge Article #6 for the complete skills update workflow."
+        echo ""
+        # Note: This is a NUDGE, not a block. Commit will proceed.
+    fi
+}
+
+# Check for skill modifications and show reminder BEFORE blocking
+check_skill_modifications
 
 # Agent detected - block commit and show message
 echo ""
