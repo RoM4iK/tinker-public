@@ -42,15 +42,13 @@ TINKER_RAW_URL = "https://raw.githubusercontent.com/RoM4iK/tinker-public/#{TINKE
 VALID_AGENT_TYPES = %w[planner worker reviewer researcher]
 
 def check_env!
-  required = %w[AGENT_TYPE PROJECT_ID RAILS_WS_URL]
+  required = %w[RAILS_WS_URL]
   missing = required.select { |var| ENV[var].to_s.empty? }
 
   unless missing.empty?
     puts "❌ Missing environment variables: #{missing.join(', ')}"
     puts ""
     puts "Required:"
-    puts "  AGENT_TYPE     - worker|planner|reviewer|researcher"
-    puts "  PROJECT_ID     - Your Tinker project ID"
     puts "  RAILS_WS_URL   - WebSocket URL (wss://tinker.example.com/cable)"
     puts ""
     puts "Optional:"
@@ -61,7 +59,7 @@ def check_env!
   end
 
   agent_type = ENV["AGENT_TYPE"]
-  unless VALID_AGENT_TYPES.include?(agent_type)
+  if agent_type && !VALID_AGENT_TYPES.include?(agent_type)
     puts "❌ Invalid AGENT_TYPE: #{agent_type}"
     puts "   Valid types: #{VALID_AGENT_TYPES.join(', ')}"
     exit 1
@@ -196,6 +194,84 @@ def setup_claude_config!
   end
 end
 
+def setup_claude_settings!
+  settings_dir = File.expand_path("~/.claude")
+  FileUtils.mkdir_p(settings_dir)
+  home_settings_json = File.join(settings_dir, "settings.json")
+
+  puts "🔧 Configuring ~/.claude/settings.json..."
+  
+  settings_config = {}
+  if File.exist?(home_settings_json)
+    begin
+      settings_config = JSON.parse(File.read(home_settings_json))
+    rescue JSON::ParserError
+      puts "⚠️  ~/.claude/settings.json is invalid, starting fresh"
+    end
+  end
+  
+  # Configure hooks
+  settings_config["hooks"] ||= {}
+  
+  
+  # Configure SessionStart hook for skill knowledge injection
+  settings_config["hooks"]["SessionStart"] ||= []
+  # Remove old hook if present
+  settings_config["hooks"]["SessionStart"].reject! do |h| 
+    h["hooks"]&.first&.dig("command")&.include?("inject-skill-knowledge.rb")
+  end
+
+  # Install hook script to ~/.claude/hooks
+  hooks_dir = File.join(settings_dir, "hooks")
+  FileUtils.mkdir_p(hooks_dir)
+  
+  session_script_name = "inject-skill-knowledge.rb"
+  dest_path = File.join(hooks_dir, session_script_name)
+  
+  # Try local copy first (dev mode), otherwise download
+  local_hook_paths = [
+    File.join(Dir.pwd, "tinker-public", "hooks", session_script_name),
+    File.join(Dir.pwd, "hooks", session_script_name)
+  ]
+  
+  local_hook_content = nil
+  local_hook_paths.each do |path|
+    if File.exist?(path)
+      local_hook_content = File.read(path)
+      puts "   (using local hook: #{path})"
+      break
+    end
+  end
+  
+  if local_hook_content
+    File.write(dest_path, local_hook_content)
+    File.chmod(0755, dest_path)
+    puts "✅ Installed SessionStart hook (from local) to #{dest_path}"
+  else
+    puts "📥 Downloading SessionStart hook..."
+    hook_url = "#{TINKER_RAW_URL}/hooks/#{session_script_name}"
+    begin
+      hook_content = URI.open(hook_url).read
+      File.write(dest_path, hook_content)
+      File.chmod(0755, dest_path)
+      puts "✅ Installed SessionStart hook (from remote) to #{dest_path}"
+    rescue OpenURI::HTTPError => e
+      puts "⚠️  Failed to download hook: #{e.message}"
+    end
+  end
+  
+  session_hook_to_add = {
+  
+  session_hook_to_add = {
+    "hooks" => [{ "type" => "command", "command" => "ruby \"#{dest_path}\"" }]
+  }
+
+  settings_config["hooks"]["SessionStart"] << session_hook_to_add
+
+  File.write(home_settings_json, JSON.pretty_generate(settings_config))
+  puts "✅ ~/.claude/settings.json configured with skill hooks"
+end
+
 def setup_system_prompt!
   if File.exist?("/etc/tinker/system-prompt.txt")
     puts "✅ System prompt available at /etc/tinker/system-prompt.txt"
@@ -204,6 +280,7 @@ def setup_system_prompt!
     exit 1
   end
 end
+
 
 def setup_skills!
   skills = ENV["SKILLS"].to_s.split(",")
@@ -504,9 +581,9 @@ def download_agent_bridge!
 end
 
 def run_agent!(bin_dir)
-  agent_type = ENV["AGENT_TYPE"]
+  agent_type = ENV["AGENT_TYPE"] || "agent"
   puts ""
-  puts "🚀 Starting #{agent_type} agent..."
+  puts "🚀 Starting #{agent_type}..."
   puts "   Press Ctrl+B then D to detach from tmux"
   puts ""
 
@@ -528,7 +605,9 @@ check_env!
 fetch_agent_id!
 setup_mcp_config!
 setup_claude_config!
+setup_claude_settings!
 setup_system_prompt!
+# setup_skill_hooks! # Deprecated in favor of global hooks
 setup_skills!
 setup_github_auth!
 setup_git_config!

@@ -109,9 +109,19 @@ module TinkerAgent
       end
 
       docker_cmd += [
-        # Mount Claude config
-        "-v", "#{ENV['HOME']}/.claude.json:/tmp/cfg/claude.json:ro",
+        # Mount Claude config directories
         "-v", "#{ENV['HOME']}/.claude:/tmp/cfg/claude_dir:ro",
+      ]
+
+      # Mount config files if they exist (to avoid creating directories for missing files)
+      if File.exist?("#{ENV['HOME']}/.claude.json")
+        docker_cmd += ["-v", "#{ENV['HOME']}/.claude.json:/tmp/cfg/claude.json:ro"]
+      end
+      if File.exist?("#{ENV['HOME']}/.claude/settings.json")
+        docker_cmd += ["-v", "#{ENV['HOME']}/.claude/settings.json:/tmp/cfg/settings.json:ro"]
+      end
+
+      docker_cmd += [
         "-v", "#{banner_path}:/etc/tinker/system-prompt.txt:ro",
         "-e", "TINKER_VERSION=main",
         "-e", "SKILLS=#{agent_def[:skills]&.join(',')}",
