@@ -89,8 +89,8 @@ end
 log_debug("Articles mapped to skills: #{articles_by_skill.keys}")
 
 # 4. Inject into SKILL.md files
-START_MARKER = "<!-- KNOWLEDGE_INJECTION_START -->"
-END_MARKER = "<!-- KNOWLEDGE_INJECTION_END -->"
+START_MARKER = "<!-- ADDITIONAL_KNOWLEDGE_START -->"
+END_MARKER = "<!-- ADDITIONAL_KNOWLEDGE_END -->"
 
 Dir.glob(File.join(SKILLS_DIR, '*', 'SKILL.md')).each do |skill_file|
   skill_dir_name = File.basename(File.dirname(skill_file))

@@ -261,8 +261,6 @@ def setup_claude_settings!
   end
   
   session_hook_to_add = {
-  
-  session_hook_to_add = {
     "hooks" => [{ "type" => "command", "command" => "ruby \"#{dest_path}\"" }]
   }
 
@@ -286,7 +284,7 @@ def setup_skills!
   skills = ENV["SKILLS"].to_s.split(",")
   return if skills.empty?
 
-  skills_dir = ".claude/skills"
+  skills_dir = File.expand_path("~/.claude/skills")
   puts "🧠 Installing #{skills.size} skills to #{skills_dir}..."
   FileUtils.mkdir_p(skills_dir)
   
