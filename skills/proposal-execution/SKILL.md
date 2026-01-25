@@ -1,6 +1,6 @@
 ---
 name: proposal-execution
-description: Use when executing approved proposals. Only memory_cleanup and test_gap proposals can be executed. Other types should use create_ticket_from_proposal directly.
+description: Use when executing approved proposals. Only memory_cleanup, tests, and docs proposals can be executed. Other types should use create_ticket_from_proposal directly.
 ---
 
 # Proposal Execution
@@ -9,26 +9,26 @@ description: Use when executing approved proposals. Only memory_cleanup and test
 
 Researchers can create proposals, but they cannot execute them directly - they need approval first. Once a proposal is **approved** by a human/reviewer, researchers can use `execute_proposal` to carry out the proposed action.
 
-**Important:** Only `memory_cleanup` and `test_gap` proposals can be executed with `execute_proposal`. All other proposal types should use `create_ticket_from_proposal` directly after approval.
+**Important:** Only `memory_cleanup`, `tests`, and `docs` proposals can be executed with `execute_proposal`. All other proposal types should use `create_ticket_from_proposal` directly after approval.
 
 ## When to Use
 
 Use `execute_proposal` when:
 - Your proposal has been **approved** (status = "approved")
-- The proposal type is `memory_cleanup` or `test_gap`
+- The proposal type is `memory_cleanup`, `tests`, or `docs`
 
 ## Proposal Types
 
 ### Executable Proposals (Use execute_proposal)
 - `memory_cleanup`: Deletes memories immediately when executed
-- `test_gap`: Creates a ticket automatically when executed (starts in backlog)
+- `tests`: Creates a ticket automatically when executed (starts in backlog)
+- `docs`: Creates a ticket automatically when executed (starts in backlog)
 
 ### Other Proposals (Use create_ticket_from_proposal directly)
 - `task`: Requires research before ticket creation
 - `autonomous_task`: Requires research before ticket creation (reviewer-approved)
-- `skill_proposal`: Requires research before skill file creation
 - `refactor`: Requires research before ticket creation
-- `feature`: Requires research before ticket creation
+- `autonomous_refactor`: Requires research before ticket creation (reviewer-approved)
 
 **DO NOT use `execute_proposal` for these types.** Instead:
 1. Wait for proposal approval (human or reviewer)
@@ -78,7 +78,7 @@ execute_proposal(proposal_id: 42)
 # Deletes memories [10, 15, 20] per proposal #42
 ```
 
-### test_gap
+### tests
 Creates a ticket for adding tests automatically. Starts in **backlog** status (autonomous workflow).
 
 **Execution result:**
@@ -90,7 +90,19 @@ Creates a ticket for adding tests automatically. Starts in **backlog** status (a
 }
 ```
 
-### task, autonomous_task, refactor, feature, skill_proposal
+### docs
+Creates a ticket for documentation automatically. Starts in **backlog** status (autonomous workflow).
+
+**Execution result:**
+```json
+{
+  "action": "created_ticket",
+  "ticket_id": 126,
+  "ticket_title": "Docs: API authentication flow"
+}
+```
+
+### task, autonomous_task, refactor, autonomous_refactor
 **DO NOT use `execute_proposal` for these types.**
 
 After approval, use `create_ticket_from_proposal` directly:
@@ -100,7 +112,7 @@ After approval, use `create_ticket_from_proposal` directly:
 4. The proposal will be marked as executed when the ticket is created
 
 **Notes:**
-- `autonomous_task` and `test_gap` can be approved by reviewer (not requiring human approval)
+- `autonomous_task`, `autonomous_refactor`, `tests`, and `docs` can be approved by reviewer (not requiring human approval)
 - Tickets from autonomous workflow proposals start in **backlog** status (skip draft)
 - Tickets from human workflow proposals start in **draft** status
 
@@ -185,7 +197,7 @@ withdraw_proposal(proposal_id: 44)
 {
   "success": false,
   "error": "Forbidden",
-  "message": "Proposal type 'task' should use create_ticket_from_proposal instead of execute_proposal. Only test_gap and memory_cleanup can be executed automatically.",
+  "message": "Proposal type 'task' should use create_ticket_from_proposal instead of execute_proposal. Only tests, docs, and memory_cleanup can be executed automatically.",
   "suggested_action": "Use create_ticket_from_proposal after completing your research"
 }
 ```
