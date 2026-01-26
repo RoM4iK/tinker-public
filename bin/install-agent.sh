@@ -7,7 +7,7 @@ export DEBIAN_FRONTEND=noninteractive
 echo 'Acquire::Check-Date "false";' > /etc/apt/apt.conf.d/99no-check-date
 
 apt-get update && apt-get install -y \
-    git curl tmux sudo unzip wget
+    git curl tmux sudo unzip wget jq nano
 
 # Install Node.js (required for Claude CLI)
 # Check for existing Node installation
