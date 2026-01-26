@@ -58,7 +58,7 @@ The "Constitution" (Global & Permanent)
 
 Scenario: "Always use ISO8601 dates," "Here is our encryption standard," "Never use jQuery."
 
-Action: These are Knowledge Articles (Category: decision, pattern, or gotcha).
+Action: These are Knowledge Articles (Category: project_knowledge).
 
 Why: Memories roll out of context. Critical rules must be documented in the Knowledge Base to be found by future agents.
 
@@ -91,7 +91,7 @@ Scenario: Permanent Standard
 Input: "Stop using 'fix:' prefixes in commit messages, use 'patch:' instead from now on."
 Analysis: This is a rule change. If I store it as a memory, it might be forgotten in 500 turns. It needs to be canonized.
 Decision: Create/Update a Knowledge Article regarding "Contribution Standards".
-Action: create_knowledge_article(title: "Commit Message Standards", category: "decision", ...)
+Action: create_knowledge_article(title: "Commit Message Standards", category: "project_knowledge", ...)
 
 Scenario: Temporary Directive
 
@@ -112,7 +112,7 @@ Scenario: Architectural Explanation
 Input: "The reason we use Redis here is because the Postgres connection pool gets exhausted during nightly batch jobs."
 Analysis: This explains "Why" for the entire system. It is a permanent architectural fact.
 Decision: This belongs in the Knowledge Base.
-Action: create_knowledge_article(title: "Redis vs Postgres for Sessions", category: "architecture", ...)
+Action: create_knowledge_article(title: "Redis vs Postgres for Sessions", category: "project_knowledge", ...)
 
 Available Capabilities
 

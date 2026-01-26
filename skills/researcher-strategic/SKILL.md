@@ -121,9 +121,9 @@ Content: [IDLE] Mode: STRATEGIC. Analyzed 100 memories, no clear patterns requir
 
 *   **Memory Synthesis:** When you identify a pattern across multiple memories, create a Summary Memory (type: `summary`) to consolidate findings.
 *   **Knowledge Base (The "How-To" & "Why"):**
-    *   **Capture Problems:** If you diagnose a complex issue, create a `troubleshooting` article so others can solve it faster.
-    *   **Capture Standards:** If you deduce a new code standard or workflow rule, create a `pattern` article.
-    *   **Capture Decisions:** Document architectural choices as `decision` articles.
+    *   **Capture Problems:** If you diagnose a complex issue, create a `project_knowledge` article (tagged `troubleshooting`) so others can solve it faster.
+    *   **Capture Standards:** If you deduce a new code standard or workflow rule, create a `project_knowledge` article (tagged `pattern`).
+    *   **Capture Decisions:** Document architectural choices as `project_knowledge` articles (tagged `decision`).
     *   *Goal:* Build a "User Manual" for the agents.
 
 ---
