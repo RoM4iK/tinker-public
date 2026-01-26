@@ -1,10 +1,41 @@
 #!/bin/bash
 #
-# Pre-commit hook to remind agents to use the git-workflow skill (blocks commit)
+# Pre-commit hook to:
+# 1. Remind agents to use the git-workflow skill (blocks commit)
+# 2. Remind agents to create PRs for skill modifications (nudge only)
 #
 # This hook only activates when AGENT_TYPE environment variable is set,
 # ensuring human commits are unaffected.
 #
+
+# Function to check for skill file modifications and remind about PRs
+check_skill_modifications() {
+    # Get list of changed files in this commit
+    changed_files=$(git diff --cached --name-only --diff-filter=ACM)
+
+    # Check if any skill file was modified
+    if echo "$changed_files" | grep -q "^tinker-public/skills/.*\.md$"; then
+        # Get current branch name
+        current_branch=$(git branch --show-current)
+
+        # Check if PR exists for this branch
+        if ! gh pr list --head "$current_branch" --json id 2>/dev/null | grep -q '"id"'; then
+            # No PR found - show reminder
+            echo ""
+            echo "⚠️  SKILL FILES MODIFIED"
+            echo ""
+            echo "Skill changes require a pull request to the tinker-public repository."
+            echo ""
+            echo "Create a PR for your changes:"
+            echo "  gh pr create --title 'Update skills: <description>'"
+            echo ""
+            echo "See Knowledge Article #6 for the complete skills update workflow."
+            echo ""
+            echo "(This is a NUDGE, not a block - your commit will still succeed)"
+            echo ""
+        fi
+    fi
+}
 
 # Check if running in agent environment
 if [ -z "$AGENT_TYPE" ]; then
@@ -16,6 +47,8 @@ if [ "$AGENT_BYPASS_COMMIT_CHECK" = "true" ]; then
     exit 0  # Bypass enabled
 fi
 
+# Check for skill modifications and remind about PRs (nudge only, doesn't block)
+check_skill_modifications
 
 # Agent detected - block commit and show message
 echo ""
