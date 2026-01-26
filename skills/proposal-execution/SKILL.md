@@ -29,15 +29,15 @@ execute_proposal(proposal_id: proposal["id"])
 # Deletes memories specified in metadata.memory_ids_to_delete
 ```
 
-#### Type: test_gap
+#### Type: tests, docs
 Execute immediately using `execute_proposal`:
 ```ruby
 execute_proposal(proposal_id: proposal["id"])
 # Creates ticket in backlog status automatically
 ```
 
-#### Type: autonomous_task
-These are reviewer-approved and can proceed directly to ticket creation:
+#### Type: autonomous_task, autonomous_refactor, task, refactor
+Research the requirement and create a ticket:
 
 1. **Research**: Investigate the codebase to understand the requirement
 2. **Create Ticket**: Use `create_ticket_from_proposal` with your findings:
@@ -48,22 +48,7 @@ create_ticket_from_proposal(
   description: "Detailed description with research findings...",
   ticket_type: "story"
 )
-# Ticket starts in backlog status (autonomous workflow)
-```
-
-#### Type: task, refactor, feature, skill_proposal
-These require human approval and need research before ticket creation:
-
-1. **Research**: Investigate the codebase to understand the requirement
-2. **Create Ticket**: Use `create_ticket_from_proposal` with your findings:
-```ruby
-create_ticket_from_proposal(
-  proposal_id: proposal["id"],
-  title: "Enhanced title based on research",
-  description: "Detailed description with research findings...",
-  ticket_type: "story"
-)
-# Ticket starts in draft status (human workflow)
+# Ticket status is automatically set based on proposal type
 ```
 
 ### Step 3: Handle Obsolete Proposals
@@ -84,11 +69,10 @@ Do NOT withdraw proposals simply because they're old - if they're still valid, e
 
 ## Execution Notes
 
-- **NO `execute_proposal` for:** task, autonomous_task, refactor, feature, skill_proposal
-- **USE `execute_proposal` for:** memory_cleanup, test_gap only
-- **Autonomous workflow tickets** (autonomous_task, test_gap) → Start in backlog
-- **Human workflow tickets** (task, refactor, feature, skill_proposal) → Start in draft
-- **Research is required** before creating tickets from proposals (except memory_cleanup/test_gap)
+- **NO `execute_proposal` for:** task, refactor, autonomous_task, autonomous_refactor
+- **USE `execute_proposal` for:** memory_cleanup, tests, docs only
+- **Status handling is automatic:** The system determines initial ticket status (backlog vs draft)
+- **Research is required** before creating tickets from proposals (except memory_cleanup/tests/docs)
 - **DO NOT ask for human input** - execute autonomously
 
 ## Example Execution Pattern
@@ -99,10 +83,10 @@ approved = list_proposals(status: "approved")
 
 approved.each do |proposal|
   case proposal["proposal_type"]
-  when "memory_cleanup", "test_gap"
+  when "memory_cleanup", "tests", "docs"
     # Direct execution
     execute_proposal(proposal_id: proposal["id"])
-  when "autonomous_task", "task", "refactor", "feature", "skill_proposal"
+  when "autonomous_task", "autonomous_refactor", "task", "refactor"
     # Research then create ticket
     research_context = investigate_codebase(proposal)
     create_ticket_from_proposal(
