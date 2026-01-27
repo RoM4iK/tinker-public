@@ -425,28 +425,92 @@ def setup_github_auth!
     # Configure git
     system("git config --global credential.helper '!f() { test \"$1\" = get && echo \"protocol=https\" && echo \"host=github.com\" && echo \"username=x-access-token\" && echo \"password=$(#{helper_path})\"; }; f'")
     
-    # Configure gh CLI wrapper for auto-refresh
+    # Configure gh CLI wrapper for auto-refresh and permission controls
     real_gh_path = "/usr/bin/gh"
     if File.exist?(real_gh_path)
+      # Move real gh to gh.real if not already done
+      unless File.exist?("#{real_gh_path}.real")
+        system("sudo mv #{real_gh_path} #{real_gh_path}.real")
+      end
+
       wrapper_path = "/usr/local/bin/gh"
       wrapper_content = <<~BASH
         #!/bin/bash
+        # GitHub CLI wrapper with permission controls for agents
         # Auto-refresh GitHub token using git-auth-helper
+
+        # Export GH_TOKEN from helper
         export GH_TOKEN=$(#{helper_path})
-        exec #{real_gh_path} "$@"
+
+        # Check if caller is an agent (read AGENT_TYPE at runtime)
+        if [ -n "$AGENT_TYPE" ] && [[ "$AGENT_TYPE" =~ ^(worker|planner|reviewer|researcher)$ ]]; then
+          # Block comment-related commands for agents
+          if [[ "$1" == "comment" ]] || ([[ "$1" == "pr" ]] && [[ "$2" == "comment" ]]); then
+            echo "❌ You cannot use 'gh $*' commands as an agent." >&2
+            echo "" >&2
+            echo "Tinker has its own comment system via the add_comment MCP tool." >&2
+            echo "Please use the add_comment tool instead of gh commands." >&2
+            echo "" >&2
+            echo "Example:" >&2
+            echo "  add_comment(ticket_id: 123, content: \\"Your comment here\\", comment_type: \\"note\\")" >&2
+            exit 1
+          fi
+        fi
+
+        # Execute real gh binary with all arguments
+        exec #{real_gh_path}.real "$@"
       BASH
-      
+
       File.write("/tmp/gh-wrapper", wrapper_content)
       system("sudo mv /tmp/gh-wrapper #{wrapper_path}")
       system("sudo chmod +x #{wrapper_path}")
-      puts "✅ GitHub App authentication configured (with auto-refresh)"
+      puts "✅ GitHub App authentication configured (with auto-refresh + permission controls)"
     else
       puts "⚠️  Could not find 'gh' at #{real_gh_path}, skipping wrapper"
     end
 
   elsif ENV["GH_TOKEN"] && !ENV["GH_TOKEN"].empty?
     system("echo '#{ENV['GH_TOKEN']}' | gh auth login --with-token 2>/dev/null")
-    puts "🔐 GitHub authentication configured"
+
+    # Install wrapper for permission controls even with GH_TOKEN
+    real_gh_path = "/usr/bin/gh"
+    if File.exist?(real_gh_path)
+      # Move real gh to gh.real if not already done
+      unless File.exist?("#{real_gh_path}.real")
+        system("sudo mv #{real_gh_path} #{real_gh_path}.real")
+      end
+
+      wrapper_path = "/usr/local/bin/gh"
+      wrapper_content = <<~BASH
+        #!/bin/bash
+        # GitHub CLI wrapper with permission controls for agents
+
+        # Check if caller is an agent (read AGENT_TYPE at runtime)
+        if [ -n "$AGENT_TYPE" ] && [[ "$AGENT_TYPE" =~ ^(worker|planner|reviewer|researcher)$ ]]; then
+          # Block comment-related commands for agents
+          if [[ "$1" == "comment" ]] || ([[ "$1" == "pr" ]] && [[ "$2" == "comment" ]]); then
+            echo "❌ You cannot use 'gh $*' commands as an agent." >&2
+            echo "" >&2
+            echo "Tinker has its own comment system via the add_comment MCP tool." >&2
+            echo "Please use the add_comment tool instead of gh commands." >&2
+            echo "" >&2
+            echo "Example:" >&2
+            echo "  add_comment(ticket_id: 123, content: \\"Your comment here\\", comment_type: \\"note\\")" >&2
+            exit 1
+          fi
+        fi
+
+        # Execute real gh binary with all arguments
+        exec #{real_gh_path}.real "$@"
+      BASH
+
+      File.write("/tmp/gh-wrapper", wrapper_content)
+      system("sudo mv /tmp/gh-wrapper #{wrapper_path}")
+      system("sudo chmod +x #{wrapper_path}")
+      puts "🔐 GitHub authentication configured (with permission controls)"
+    else
+      puts "🔐 GitHub authentication configured"
+    end
   else
     puts "⚠️  No GH_TOKEN or GitHub App config - GitHub operations may fail"
   end
