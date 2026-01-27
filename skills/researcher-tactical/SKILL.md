@@ -70,6 +70,17 @@ Execute protocols in priority order until you create ONE proposal:
 | `autonomous_task` | Immediate fixes, missing tests on *new* code. |
 | `refactor` | Structural improvements. See [refactoring.md](refactoring.md) for guidelines. **MUST** check Knowledge Base first. |
 
+### Prohibited Proposal Types
+
+**DEPENDENCY UPDATES ARE FORBIDDEN:**
+
+- Never create proposals for gem updates, bundle outdated, or dependency upgrades
+- Dependency updates are:
+  * Low-value noise
+  * Security risks requiring human review
+  * Should be handled through dedicated dependency management workflows
+- **Evidence:** See Knowledge Article #43 "Researcher Agent: Dependency Update Prohibition"
+
 ---
 
 ## 6. The Memory & Knowledge Protocol (Read/Write Rules)
