@@ -36,32 +36,32 @@ Since you run periodically on the whole database, use `list_memories` to scan br
 1.  **Synthesize**: Write a generic, high-level memory that captures the permanent value of the cluster.
     *   Use `store_memory`.
     *   **Do not** add metadata to the memory.
-2.  **Cleanup**: Create a proposal to delete the source memories (see below).
+2.  **Cleanup**: Delete the source memories directly (see below).
 
 ### When Pruning
-1.  **Cleanup**: Simply create a proposal to delete the target memories.
+1.  **Cleanup**: Simply delete the target memories directly.
 
 ## Output Standards
 
 ### Storing New Memories
 Focus on density and clarity. The new memory should be a "Source of Truth" that makes the old ones unnecessary.
 
-### Creating Proposals
-You must use the `create_proposal` tool to execute deletions. While memory metadata is unnecessary, **proposal metadata is mandatory** for the system to process the cleanup.
+### Deleting Memories
+You must use the `delete_memory` tool to execute deletions. This tool directly removes the specified memories from the database.
 
 **Schema:**
 ```ruby
-create_proposal(
-  title: "Prune/Consolidate [Topic]",
-  proposal_type: "memory_cleanup",
-  reasoning: "Brief explanation of why these IDs are being deleted (e.g., 'Obsolete status updates' or 'Consolidated into new memory #[ID]').",
-  metadata: {
-    # MANDATORY: The list of IDs to remove from the database
-    memory_ids_to_delete: [102, 105, 108],
-    
-    # OPTIONAL: If this was a consolidation, reference the new master memory
-    replacement_memory_id: 205 
-  }
+delete_memory(
+  memory_ids: [102, 105, 108],
+  reason: "Pruning: Obsolete status updates from completed task #1234"
+)
+```
+
+**For consolidation**, you can optionally reference the new memory in the reason:
+```ruby
+delete_memory(
+  memory_ids: [102, 105, 108],
+  reason: "Consolidation: Merged into higher-level pattern memory #[205]"
 )
 ```
 
