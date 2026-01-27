@@ -22,13 +22,6 @@ If no approved proposals exist, stop execution.
 
 For each approved proposal, execute based on its type:
 
-#### Type: memory_cleanup
-Execute immediately using `execute_proposal`:
-```ruby
-execute_proposal(proposal_id: proposal["id"])
-# Deletes memories specified in metadata.memory_ids_to_delete
-```
-
 #### Type: tests, docs
 Execute immediately using `execute_proposal`:
 ```ruby
@@ -70,9 +63,9 @@ Do NOT withdraw proposals simply because they're old - if they're still valid, e
 ## Execution Notes
 
 - **NO `execute_proposal` for:** task, refactor, autonomous_task, autonomous_refactor
-- **USE `execute_proposal` for:** memory_cleanup, tests, docs only
+- **USE `execute_proposal` for:** tests, docs only
 - **Status handling is automatic:** The system determines initial ticket status (backlog vs draft)
-- **Research is required** before creating tickets from proposals (except memory_cleanup/tests/docs)
+- **Research is required** before creating tickets from proposals (except tests/docs)
 - **DO NOT ask for human input** - execute autonomously
 
 ## Example Execution Pattern
@@ -83,7 +76,7 @@ approved = list_proposals(status: "approved")
 
 approved.each do |proposal|
   case proposal["proposal_type"]
-  when "memory_cleanup", "tests", "docs"
+  when "tests", "docs"
     # Direct execution
     execute_proposal(proposal_id: proposal["id"])
   when "autonomous_task", "autonomous_refactor", "task", "refactor"
