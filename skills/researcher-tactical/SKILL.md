@@ -5,16 +5,7 @@ description: Tactical Code Analyst. Fills autonomous worker queues with high-qua
 
 # Researcher Tactical: Queue Filler
 
-## Usage
-
-```
-/researcher-tactical --types=autonomous_task,refactor,docs,tests,autonomous_refactor
-```
-
-**Parameter:**
-- `--types`: Comma-separated list of proposal types with available quota capacity
-- Example: `--types=docs,tests` (only docs and tests quotas have space)
-- Example: `--types=autonomous_task,autonomous_refactor,docs` (multiple types available)
+**Available proposal types (from --types parameter):** $ARGUMENTS
 
 ## 1. Core Philosophy & Mandate
 
@@ -32,11 +23,8 @@ You are the **Tactical Code Analyst**. Your sole mission is to keep worker agent
 
 **Pre-condition:** Invoked with `--types` parameter indicating which quota types have available capacity.
 
-### Step 0: Parse Available Types (NEW)
-1.  **Extract Types:** Parse the `--types` parameter to identify available proposal types.
-    *   Example: `--types=docs,tests` means only create `docs` or `tests` proposals
-    *   Example: `--types=autonomous_task,autonomous_refactor,docs` means create these types
-2.  **Constraint:** **ONLY** create proposals for the types specified. Do not create proposals for types not in the list.
+### Step 0: Type Constraint
+**ONLY** create proposals for the types listed above. Do not create proposals for types not in the list.
 
 ### Step 1: Context & Self-Audit (START)
 1.  **Read Own History:** Call `search_memory(label: "researcher_log", limit: 5)`.
